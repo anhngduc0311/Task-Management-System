@@ -39,9 +39,8 @@ Phiên bản MVP tập trung vào các chức năng cốt lõi:
 
 ## 1.3. Ngoài phạm vi MVP
 
-Các chức năng sau không thuộc phạm vi MVP, trừ khi có quyết định thay đổi chính thức:
+Các chức năng sau không thuộc phạm vi MVP (ngoại trừ Biểu đồ Gantt đã được triển khai bổ sung ở Phase 7):
 
-- Biểu đồ Gantt.
 - AI gợi ý / chấm điểm task.
 - Time tracking phức tạp.
 - Workflow automation nâng cao.
@@ -299,13 +298,18 @@ Nhiệm vụ:
 
 Ví dụ use case:
 
-- CreateTask.
+- Register (Đăng ký).
+- Login / RefreshToken (Xác thực).
+- CreateTask / UpdateTask / DeleteTask.
+- SetParentTask / RemoveParentTask (Quan hệ Task Cha - Con).
+- CreateDynamicField / UpdateDynamicField / DeleteDynamicField (Trường động).
+- UpdateTaskDynamicValues (Cập nhật giá trị trường động).
+- GetWorkSummaryReport / GetStatusReport / GetPriorityReport / GetAssigneeReport (Báo cáo hiệu suất).
 - UpdateTaskStatus.
 - AssignTask.
 - AddComment.
 - UploadAttachment.
-- DeleteTask.
-- AddProjectMember.
+- AddProjectMember (bằng Email).
 - ChangeUserRole.
 
 ### 3.2.4. Domain Layer
@@ -320,11 +324,13 @@ Thành phần:
 
 Các entity chính:
 
-- User.
+- User (Bổ sung RefreshToken, RefreshTokenExpiryTime).
 - Role.
 - Project.
 - ProjectMember.
-- Task.
+- Task (Bổ sung CompletedAt, ParentTaskId).
+- DynamicFieldDefinition (Định nghĩa trường dữ liệu động).
+- TaskDynamicFieldValue (Giá trị trường dữ liệu động của task).
 - TaskComment.
 - TaskAttachment.
 - AuditLog.
@@ -431,9 +437,15 @@ Thông tin chính:
 - AssigneeId.
 - CreatedById.
 - DueDate.
+- CompletedAt (Ngày hoàn thành thực tế).
+- ParentTaskId (Task cha của task hiện tại, cho phép phân cấp công việc).
 - CreatedAt.
 - UpdatedAt.
-- RowVersion hoặc concurrency token.
+- RowVersion hoặc concurrency token (Hỗ trợ optimistic concurrency).
+
+Lưu ý quan trọng về ràng buộc nghiệp vụ:
+- Không được phép tạo vòng lặp đệ quy trong quan hệ cha-con (circular dependency).
+- Không được phép xóa Task cha nếu còn chứa các Task con chưa hoàn thành (`Todo`/`InProgress`/`InReview`). Khi xóa mềm Task cha thành công, liên kết `ParentTaskId` của các task con sẽ tự động gỡ bỏ (sét thành null).
 
 Lưu ý:
 
@@ -492,16 +504,43 @@ Thông tin chính:
 - IpAddress.
 - UserAgent.
 
-MVP có thể chỉ ghi các thay đổi quan trọng:
+Hệ thống ghi nhận log tự động cho các hành động:
 
 - Tạo task.
-- Sửa task.
+- Sửa task (bao gồm thay đổi giá trị trường động).
 - Đổi trạng thái.
 - Đổi assignee.
 - Đổi deadline.
-- Xóa task.
+- Thay đổi quan hệ Task cha-con (`TaskParentChanged`, `TaskParentRemoved`).
+- Xóa task (`TaskDeleted`).
 - Thêm / xóa thành viên project.
 - Thay đổi quyền.
+- Tạo / sửa / xóa trường dữ liệu động (`DynamicFieldCreated`, `DynamicFieldUpdated`, `DynamicFieldDeleted`).
+
+## 4.9. DynamicFieldDefinition (Bổ sung mới)
+
+Định nghĩa trường dữ liệu động tùy chỉnh cho mỗi dự án.
+
+Thông tin chính:
+- Id.
+- ProjectId.
+- FieldName (Tên hiển thị hiển thị trên giao diện).
+- FieldKey (Khóa định danh trường để lưu trữ/truy vấn).
+- FieldType (Text, Number, Date, Boolean, Select, MultiSelect).
+- IsRequired (Đánh dấu bắt buộc nhập).
+- Options (Các tùy chọn có sẵn đối với dạng Select/MultiSelect dưới dạng JSON Array).
+- DefaultValue (Giá trị mặc định).
+- DisplayOrder (Thứ tự hiển thị trên form).
+- IsActive (Trạng thái hoạt động).
+
+## 4.10. TaskDynamicFieldValue (Bổ sung mới)
+
+Lưu trữ giá trị thực tế của các trường động được nhập liệu cho mỗi task.
+
+Thông tin chính:
+- TaskId.
+- DynamicFieldId.
+- FieldValue (Giá trị dạng chuỗi hoặc JSON đối với MultiSelect).
 
 ---
 
@@ -797,8 +836,8 @@ Audit log nên được ghi ở Application Layer hoặc thông qua cơ chế th
 - MVP không yêu cầu real-time toàn hệ thống.
 - Không sử dụng SignalR nếu chưa có nhu cầu rõ ràng.
 - Không thiết kế quá phức tạp trước khi có user feedback.
-- Không đưa AI, Gantt, time tracking nâng cao vào MVP.
-- Không lưu file lớn trực tiếp trong database.
+- Không đưa AI, time tracking nâng cao vào MVP (Biểu đồ Gantt đã được hỗ trợ ở Phase 7).
+- Không lưu file lớn trực tiếp trong database (sử dụng thư mục file trên server).
 
 ## 7.2. Giới hạn về hiệu năng
 
@@ -1009,57 +1048,39 @@ Không nên deploy trực tiếp lên production mà bỏ qua staging.
 
 ---
 
-# 10. Các câu hỏi cần người quyết định cuối cùng chốt
+# 10. Các câu hỏi đã được thống nhất và quyết định
 
-Các điểm sau cần được chốt trước hoặc trong giai đoạn thiết kế chi tiết:
+Các câu hỏi kiến trúc dưới đây đã được thảo luận và chốt phương án triển khai thực tế:
 
 ## 10.1. Sản phẩm
 
-1. Hệ thống chỉ dùng nội bộ hay hướng tới SaaS cho nhiều tổ chức?
-2. MVP cần giống Trello đơn giản hay Jira-lite?
-3. Có cần task cha/con trong MVP không?
-4. Có cần nhiều assignee cho một task không?
-5. Có cần Guest trong MVP không?
+1. **Hệ thống hướng tới đối tượng nào?** -> Hệ thống quản lý nội bộ dành cho các nhóm từ 5-50 người.
+2. **Loại hình giao diện?** -> Định hướng Jira-lite (đầy đủ tính năng quản lý công việc và báo cáo chi tiết).
+3. **Có cần task cha/con trong MVP không?** -> Có. Đã hỗ trợ phân cấp Task Cha - Con (Parent-Child Hierarchy) đệ quy ngăn ngừa vòng lặp.
+4. **Có cần nhiều assignee cho một task không?** -> Không, mỗi task chỉ thuộc về một Assignee duy nhất tại một thời điểm để nâng cao trách nhiệm.
+5. **Có cần Guest trong MVP không?** -> Không. Hiện tại chỉ hỗ trợ vai trò hệ thống và vai trò trong dự án (Project Manager, Member).
 
-## 10.2. Quyền
+## 10.2. Phân quyền
 
-1. Quyền chỉ theo role hay theo từng project/task/action?
-2. Member có được sửa task của người khác không?
-3. Assignee có được tự đổi deadline không?
-4. Ai được xóa task?
-5. Ai được xem audit log?
+1. **Member có được sửa task của người khác không?** -> Không. Member chỉ được sửa mô tả và trạng thái các task do chính họ đảm nhận hoặc tạo ra.
+2. **Ai được quyền chỉnh sửa toàn bộ thông tin task?** -> PM và Admin dự án.
+3. **Ai được xóa task?** -> PM và Admin có quyền xóa mềm task (với điều kiện các task con của nó đã hoàn thành hoặc hủy).
 
-## 10.3. File
+## 10.3. File đính kèm
 
-1. File tối đa bao nhiêu MB?
-2. Cho phép loại file nào?
-3. File có chứa dữ liệu nhạy cảm không?
-4. Khi xóa task, file bị xóa thật hay chỉ ẩn?
-5. Có cần signed URL không?
+1. **Nơi lưu trữ file đính kèm?** -> Sử dụng lưu trữ cục bộ (Local server folder) trong thư mục cấu hình `uploads`.
+2. **File tối đa bao nhiêu MB?** -> Tối đa 20 MB/file.
+3. **Cho phép loại file nào?** -> Chỉ cho phép các định dạng tệp hình ảnh (.jpg, .jpeg, .png, .gif) để đảm bảo an toàn hệ thống.
 
-## 10.4. Audit
+## 10.4. Xác thực & Bảo mật
 
-1. Audit log dùng để tham khảo hay làm bằng chứng trách nhiệm?
-2. Có cần lưu old value/new value chi tiết không?
-3. Có cần lưu IP và user agent không?
-4. Admin có được xóa audit log không?
-5. Cần giữ audit log trong bao lâu?
+1. **Phiên đăng nhập (Session)?** -> Xác thực qua JWT Token với thời gian hết hạn Access Token là 15 phút.
+2. **Cơ chế làm mới phiên?** -> Sử dụng Refresh Token được lưu trữ trong DB và gửi/nhận an toàn phía client.
+3. **Audit Log:** Lưu chi tiết các giá trị cũ (OldValue) và mới (NewValue) dưới dạng JSON cùng địa chỉ IP và User Agent của người thao tác.
 
-## 10.5. Vận hành
+## 10.5. Real-time
 
-1. Chấp nhận mất dữ liệu tối đa bao lâu nếu có sự cố?
-2. Chấp nhận downtime tối đa bao lâu?
-3. Ai chịu trách nhiệm backup/restore?
-4. Ai duyệt database migration?
-5. Có cần dashboard monitoring ngay từ MVP không?
-
-## 10.6. Real-time
-
-1. MVP có bắt buộc real-time không?
-2. Comment có cần hiện tức thì không?
-3. Board có cần tự cập nhật không?
-4. Có chấp nhận polling trước không?
-5. SignalR đưa vào Phase 2 có phù hợp không?
+1. **Có bắt buộc real-time không?** -> Không. MVP sử dụng cơ chế thủ công (manual refresh) và polling nhẹ trên giao diện.
 
 ---
 
@@ -1085,7 +1106,7 @@ Audit Log
 Docker + CI/CD cơ bản
 ```
 
-MVP không ưu tiên microservices, AI, Gantt chart hoặc real-time phức tạp.
+MVP không ưu tiên microservices, AI hoặc real-time phức tạp. Biểu đồ Gantt và Báo cáo hiệu suất nâng cao (Work Performance & Reports) đã được đưa vào triển khai ở Phase 7.
 
 Trọng tâm kiến trúc là:
 
@@ -1095,6 +1116,6 @@ Trọng tâm kiến trúc là:
 - Có audit rõ ràng.
 - Tránh phình database vì file.
 - Tránh feature creep.
-- Có nền tảng mở rộng sang real-time, notification, reporting hoặc SaaS trong tương lai.
+- Có nền tảng mở rộng sang real-time, notification, hoặc SaaS trong tương lai.
 
 Tài liệu này là cơ sở thống nhất cho các bước tiếp theo: thiết kế database, thiết kế API, chia module backend, thiết kế UI flow và lập kế hoạch triển khai MVP.
