@@ -459,6 +459,15 @@ import { SafeHtmlPipe } from '../../shared/pipes/safe-html.pipe';
       line-height: 1.5;
       white-space: pre-wrap;
     }
+    .desc-text a, .form-textarea a {
+      color: var(--primary);
+      text-decoration: underline;
+      font-weight: 500;
+      transition: color var(--transition-fast);
+    }
+    .desc-text a:hover, .form-textarea a:hover {
+      color: #4338ca;
+    }
 
     /* Details Grid */
     .task-details-grid {
@@ -1067,7 +1076,7 @@ export class TaskDetailModal implements OnInit, OnDestroy {
   insertLink() {
     const url = prompt('Enter the link URL (e.g. https://example.com):');
     if (url) {
-      this.insertTag(`<a href="${url}">`, '</a>');
+      this.insertTag(`<a href="${url}" target="_blank" rel="noopener noreferrer">`, '</a>');
     }
   }
 
