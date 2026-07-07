@@ -16,13 +16,24 @@ namespace TaskManagement.API.IntegrationTests
 {
     public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProgram> where TProgram : class
     {
+        private readonly string _dbName = Guid.NewGuid().ToString();
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.ConfigureAppConfiguration((context, config) =>
+            builder.ConfigureServices(services =>
             {
-                config.AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
+                var optionsDescriptor = services.SingleOrDefault(
+                    d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+                if (optionsDescriptor != null)
                 {
-                    { "UseInMemoryDatabase", "true" }
+                    services.Remove(optionsDescriptor);
+                }
+
+                services.AddScoped<DbContextOptions<AppDbContext>>(provider =>
+                {
+                    return new DbContextOptionsBuilder<AppDbContext>()
+                        .UseInMemoryDatabase(_dbName)
+                        .Options;
                 });
             });
         }

@@ -30,5 +30,21 @@ namespace TaskManagement.Infrastructure.Persistence
             // Apply all entity configurations in the assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
+
+        public override System.Threading.Tasks.Task<int> SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default)
+        {
+            var entries = ChangeTracker
+                .Entries()
+                .Where(e => e.Entity is TaskManagement.Domain.Entities.Task && 
+                            (e.State == EntityState.Added || e.State == EntityState.Modified));
+
+            foreach (var entry in entries)
+            {
+                var task = (TaskManagement.Domain.Entities.Task)entry.Entity;
+                task.RowVersion = Guid.NewGuid().ToByteArray();
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
+        }
     }
 }
