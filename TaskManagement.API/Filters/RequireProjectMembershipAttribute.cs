@@ -29,8 +29,9 @@ namespace TaskManagement.API.Filters
 
             Guid projectId = Guid.Empty;
             
-            // Search routes first ("pid" or "projectId")
-            if (context.RouteData.Values.TryGetValue("pid", out var pidObj) ||
+            // Search routes first ("id", "pid", or "projectId")
+            if (context.RouteData.Values.TryGetValue("id", out var pidObj) ||
+                context.RouteData.Values.TryGetValue("pid", out pidObj) ||
                 context.RouteData.Values.TryGetValue("projectId", out pidObj))
             {
                 if (pidObj != null) Guid.TryParse(pidObj.ToString(), out projectId);

@@ -56,7 +56,7 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 Id = Guid.Parse("8a4b4ef9-7ec7-4dbb-8fb6-82ff4b4ab456"),
                 FullName = "Administrator",
                 Email = "admin@taskmanagement.com",
-                PasswordHash = "$2a$11$qRz3vYmK3e4e9Fh6z82sNu98c5C6z7b6O8y/eW5G42e9X2aO1q9i.", // Admin@12345
+                PasswordHash = "$2a$11$roDRW6Ytx41flf36/FevM.l02hymIFkzhoEw8XvK/vnbS28GF6Bnq", // Admin@12345
                 Status = UserStatus.Active,
                 CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
@@ -67,7 +67,7 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 Id = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
                 FullName = "Project Manager User",
                 Email = "pm@taskmanagement.com",
-                PasswordHash = "$2a$11$qRz3vYmK3e4e9Fh6z82sNu98c5C6z7b6O8y/eW5G42e9X2aO1q9i.", // Admin@12345
+                PasswordHash = "$2a$11$roDRW6Ytx41flf36/FevM.l02hymIFkzhoEw8XvK/vnbS28GF6Bnq", // Admin@12345
                 Status = UserStatus.Active,
                 CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
@@ -78,7 +78,7 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 Id = Guid.Parse("2a98e29a-2454-4fbb-91bc-341aefba6222"),
                 FullName = "Regular Member User",
                 Email = "member@taskmanagement.com",
-                PasswordHash = "$2a$11$qRz3vYmK3e4e9Fh6z82sNu98c5C6z7b6O8y/eW5G42e9X2aO1q9i.", // Admin@12345
+                PasswordHash = "$2a$11$roDRW6Ytx41flf36/FevM.l02hymIFkzhoEw8XvK/vnbS28GF6Bnq", // Admin@12345
                 Status = UserStatus.Active,
                 CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
@@ -89,7 +89,7 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 Id = Guid.Parse("3f78e7aa-2e45-424a-81a1-f3b17789a333"),
                 FullName = "Guest User",
                 Email = "guest@taskmanagement.com",
-                PasswordHash = "$2a$11$qRz3vYmK3e4e9Fh6z82sNu98c5C6z7b6O8y/eW5G42e9X2aO1q9i.", // Admin@12345
+                PasswordHash = "$2a$11$roDRW6Ytx41flf36/FevM.l02hymIFkzhoEw8XvK/vnbS28GF6Bnq", // Admin@12345
                 Status = UserStatus.Active,
                 CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
