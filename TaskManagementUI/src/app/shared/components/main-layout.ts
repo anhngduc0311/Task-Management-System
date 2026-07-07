@@ -31,6 +31,10 @@ import { Avatar } from './avatar';
             <span class="material-symbols-rounded">folder_open</span>
             <span>Projects</span>
           </a>
+          <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+            <span class="material-symbols-rounded">bar_chart</span>
+            <span>Reports</span>
+          </a>
           @if (isAdmin()) {
             <a routerLink="/users" routerLinkActive="active" class="nav-item">
               <span class="material-symbols-rounded">group</span>
@@ -299,6 +303,7 @@ export class MainLayout {
     if (url.includes('my-tasks')) return 'My Tasks';
     if (url.includes('projects/')) return 'Project Details';
     if (url.includes('projects')) return 'Projects';
+    if (url.includes('reports')) return 'Reports';
     if (url.includes('users')) return 'User Management';
     return 'Task Management';
   }

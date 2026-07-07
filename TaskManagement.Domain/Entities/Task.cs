@@ -23,6 +23,7 @@ namespace TaskManagement.Domain.Entities
         public User CreatedBy { get; set; } = null!;
 
         public DateTime? DueDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -62,6 +63,15 @@ namespace TaskManagement.Domain.Entities
 
             // Cannot transition to the same status
             if (Status == newStatus) return;
+
+            if (newStatus == TaskStatus.Done)
+            {
+                CompletedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                CompletedAt = null;
+            }
 
             Status = newStatus;
             UpdatedAt = DateTime.UtcNow;

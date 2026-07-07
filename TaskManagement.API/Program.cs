@@ -53,6 +53,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()

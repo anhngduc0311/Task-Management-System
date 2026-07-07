@@ -34,6 +34,8 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
 
             builder.Property(t => t.DueDate);
 
+            builder.Property(t => t.CompletedAt);
+
             builder.Property(t => t.IsDeleted)
                 .IsRequired();
 
@@ -102,6 +104,7 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                     AssigneeId = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
                     CreatedById = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
                     DueDate = new DateTime(2026, 7, 10, 0, 0, 0, DateTimeKind.Utc),
+                    CompletedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
                     IsDeleted = false,
                     CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
                     UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
