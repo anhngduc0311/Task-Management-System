@@ -532,16 +532,16 @@ import { DynamicFieldService } from '../../core/services/dynamic-field.service';
                         <div class="log-details">
                           <div class="log-title">
                             <strong>{{ log.changedByName }}</strong>
-                            {{ getAuditActionLabel(log.action) }} task
+                            {{ log.friendlyDescription }}
                           </div>
                           <div class="log-time">{{ log.changedAt | date:'short' }}</div>
-                          @if (log.oldValue || log.newValue) {
+                          @if (log.oldValueFormatted || log.newValueFormatted) {
                             <div class="log-diff">
-                              @if (log.oldValue) {
-                                <div class="diff-old">Before: {{ log.oldValue }}</div>
+                              @if (log.oldValueFormatted) {
+                                <div class="diff-old">Before: {{ log.oldValueFormatted }}</div>
                               }
-                              @if (log.newValue) {
-                                <div class="diff-new">After: {{ log.newValue }}</div>
+                              @if (log.newValueFormatted) {
+                                <div class="diff-new">After: {{ log.newValueFormatted }}</div>
                               }
                             </div>
                           }
@@ -1025,7 +1025,8 @@ export class TaskDetailModal implements OnInit, OnDestroy {
   loadAuditLogs() {
     this.auditLogService.getTaskAuditLogs(this.taskId).subscribe({
       next: (logs) => {
-        this.auditLogs.set(logs || []);
+        const enriched = (logs || []).map((l: any) => this.enrichAuditLog(l));
+        this.auditLogs.set(enriched);
       }
     });
   }
@@ -1346,5 +1347,86 @@ export class TaskDetailModal implements OnInit, OnDestroy {
 
   closeLightbox() {
     this.lightboxUrl.set(null);
+  }
+
+  enrichAuditLog(log: any): any {
+    let friendlyDescription = '';
+    let oldValueFormatted = log.oldValue;
+    let newValueFormatted = log.newValue;
+
+    let entityName = '';
+    if (log.entityType === 'Task') {
+      entityName = this.task() ? `task "${this.task().title}"` : `task #${log.entityId.substring(0, 8)}`;
+    } else if (log.entityType === 'TaskComment') {
+      entityName = `comment`;
+    } else if (log.entityType === 'TaskAttachment') {
+      entityName = `attachment`;
+    } else {
+      entityName = `${log.entityType.toLowerCase()} #${log.entityId.substring(0, 8)}`;
+    }
+
+    switch (log.action) {
+      case 'TaskCreated':
+        friendlyDescription = `created ${entityName}`;
+        break;
+      case 'TaskUpdated':
+        friendlyDescription = `updated details of ${entityName}`;
+        break;
+      case 'TaskDeleted':
+        friendlyDescription = `deleted ${entityName}`;
+        break;
+      case 'TaskStatusChanged':
+        friendlyDescription = `changed status of ${entityName}`;
+        if (log.oldValue) oldValueFormatted = this.formatStatus(log.oldValue);
+        if (log.newValue) newValueFormatted = this.formatStatus(log.newValue);
+        break;
+      case 'TaskPriorityChanged':
+        friendlyDescription = `changed priority of ${entityName}`;
+        break;
+      case 'TaskAssigneeChanged':
+        friendlyDescription = `reassigned ${entityName}`;
+        if (log.oldValue) {
+          const m = this.projectMembers().find((x: any) => x.userId === log.oldValue);
+          oldValueFormatted = m ? m.fullName : 'Unassigned';
+        } else {
+          oldValueFormatted = 'Unassigned';
+        }
+        if (log.newValue) {
+          const m = this.projectMembers().find((x: any) => x.userId === log.newValue);
+          newValueFormatted = m ? m.fullName : 'Unassigned';
+        } else {
+          newValueFormatted = 'Unassigned';
+        }
+        break;
+      case 'CommentAdded':
+        friendlyDescription = `added a ${entityName}`;
+        break;
+      case 'CommentDeleted':
+        friendlyDescription = `removed a ${entityName}`;
+        break;
+      case 'AttachmentUploaded':
+      case 'AttachmentAdded':
+        friendlyDescription = `uploaded an ${entityName}`;
+        break;
+      case 'AttachmentDeleted':
+        friendlyDescription = `removed an ${entityName}`;
+        break;
+      default:
+        friendlyDescription = `${this.getAuditActionLabel(log.action)} ${entityName}`;
+        break;
+    }
+
+    return {
+      ...log,
+      friendlyDescription,
+      oldValueFormatted,
+      newValueFormatted
+    };
+  }
+
+  formatStatus(status: string): string {
+    if (status === 'InProgress') return 'In Progress';
+    if (status === 'InReview') return 'In Review';
+    return status;
   }
 }
