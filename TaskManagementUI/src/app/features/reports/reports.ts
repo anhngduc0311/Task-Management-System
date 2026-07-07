@@ -23,6 +23,7 @@ import { ProjectService } from '../../core/services/project.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
 import { HttpClient } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-reports',
@@ -1170,9 +1171,41 @@ export class Reports implements OnInit, AfterViewInit {
         this.refreshReports();
       },
       error: (err) => {
-        this.loading.set(false);
-        this.error.set('Failed to load users list.');
-        this.toast.error('Could not load assignees.');
+        // Fallback for non-admin users: aggregate members from all projects they belong to
+        const projectsList = this.projects();
+        if (projectsList.length === 0) {
+          this.allUsers.set([]);
+          this.assignees.set([]);
+          this.refreshReports();
+          return;
+        }
+
+        const memberRequests = projectsList.map(p => this.projectService.getMembers(p.id));
+        forkJoin(memberRequests).subscribe({
+          next: (results) => {
+            const userMap = new Map<string, any>();
+            results.forEach((mList: any) => {
+              if (mList) {
+                mList.forEach((m: any) => {
+                  userMap.set(m.userId, {
+                    id: m.userId,
+                    fullName: m.fullName,
+                    email: m.email
+                  });
+                });
+              }
+            });
+            const users = Array.from(userMap.values());
+            this.allUsers.set(users);
+            this.assignees.set(users);
+            this.refreshReports();
+          },
+          error: () => {
+            this.loading.set(false);
+            this.error.set('Failed to load users list.');
+            this.toast.error('Could not load assignees.');
+          }
+        });
       }
     });
   }
