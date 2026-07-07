@@ -9,3 +9,4 @@ C:\Users\akzan\Desktop\Task Management System\TaskManagement.Domain\obj\Debug\ne
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Domain\obj\Debug\net10.0\refint\TaskManagement.Domain.dll
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Domain\obj\Debug\net10.0\TaskManagement.Domain.pdb
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Domain\obj\Debug\net10.0\ref\TaskManagement.Domain.dll
+C:\Users\akzan\Desktop\Task Management System\TaskManagement.Domain\obj\Debug\net10.0\TaskManagement.Domain.sourcelink.json

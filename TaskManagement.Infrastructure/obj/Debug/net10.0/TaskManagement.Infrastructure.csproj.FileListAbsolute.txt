@@ -17,3 +17,4 @@ C:\Users\akzan\Desktop\Task Management System\TaskManagement.Infrastructure\obj\
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Infrastructure\obj\Debug\net10.0\TaskManagement.Infrastructure.pdb
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Infrastructure\obj\Debug\net10.0\TaskManagement.Infrastructure.genruntimeconfig.cache
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Infrastructure\obj\Debug\net10.0\ref\TaskManagement.Infrastructure.dll
+C:\Users\akzan\Desktop\Task Management System\TaskManagement.Infrastructure\obj\Debug\net10.0\TaskManagement.Infrastructure.sourcelink.json

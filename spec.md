@@ -757,8 +757,8 @@ Phase 0 (Setup)
 
 > [!TIP]
 > **Điểm cần chốt trước khi bắt đầu code:**
-> 1. Loại file storage sẽ dùng (Local folder / Azure Blob / AWS S3)?
-> 2. Kích thước file tối đa và loại file được phép?
-> 3. Member có được sửa task của người khác không?
-> 4. Có cần Guest role trong MVP không?
-> 5. Phiên JWT hết hạn sau bao lâu?
+> 1. Loại file storage sẽ dùng (Local folder / Azure Blob / AWS S3)? trà lời: dùng local folder
+> 2. Kích thước file tối đa và loại file được phép? trả lời: 20mb, file dạng ảnh
+> 3. Member có được sửa task của người khác không? trả lời: ko
+> 4. Có cần Guest role trong MVP không? trà lời: ko
+> 5. Phiên JWT hết hạn sau bao lâu? trà lời: 15 phút  

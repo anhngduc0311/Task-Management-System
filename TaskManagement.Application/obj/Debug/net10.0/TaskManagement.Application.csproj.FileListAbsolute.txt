@@ -13,3 +13,4 @@ C:\Users\akzan\Desktop\Task Management System\TaskManagement.Application\obj\Deb
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Application\obj\Debug\net10.0\refint\TaskManagement.Application.dll
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Application\obj\Debug\net10.0\TaskManagement.Application.pdb
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.Application\obj\Debug\net10.0\ref\TaskManagement.Application.dll
+C:\Users\akzan\Desktop\Task Management System\TaskManagement.Application\obj\Debug\net10.0\TaskManagement.Application.sourcelink.json
