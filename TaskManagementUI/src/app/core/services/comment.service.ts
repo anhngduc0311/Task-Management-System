@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class CommentService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api/tasks';
+  private readonly baseUrl = 'http://localhost:5035/api/tasks';
 
   getComments(taskId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/${taskId}/comments`);

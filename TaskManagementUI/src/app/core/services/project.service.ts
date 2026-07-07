@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class ProjectService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api/projects';
+  private readonly baseUrl = 'http://localhost:5035/api/projects';
 
   getProjects(page: number = 1, pageSize: number = 10): Observable<any> {
     const params = new HttpParams()

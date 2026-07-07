@@ -7,7 +7,7 @@ import { tap } from 'rxjs';
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api/auth';
+  private readonly baseUrl = 'http://localhost:5035/api/auth';
 
   readonly currentUser = signal<any>(this.getStoredUser());
 

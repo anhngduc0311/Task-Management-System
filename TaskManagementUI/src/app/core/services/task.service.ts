@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class TaskService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api';
+  private readonly baseUrl = 'http://localhost:5035/api';
 
   getProjectTasks(projectId: string, filters: any = {}): Observable<any> {
     let params = new HttpParams();

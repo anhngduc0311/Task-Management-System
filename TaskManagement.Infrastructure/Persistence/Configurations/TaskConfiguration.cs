@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TaskManagement.Domain.Entities;
 using Task = TaskManagement.Domain.Entities.Task;
+using TaskStatus = TaskManagement.Domain.Enums.TaskStatus;
+using TaskPriority = TaskManagement.Domain.Enums.TaskPriority;
 
 namespace TaskManagement.Infrastructure.Persistence.Configurations
 {
@@ -81,6 +83,55 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
             builder.HasIndex(t => t.DueDate)
                 .HasDatabaseName("IX_Tasks_DueDate")
                 .HasFilter("[IsDeleted] = 0 AND [DueDate] IS NOT NULL");
+
+            // Seed tasks
+            builder.HasData(
+                new Task
+                {
+                    Id = Guid.Parse("a11e11a1-1111-1111-1111-111111111111"),
+                    ProjectId = Guid.Parse("c7a52f44-8842-45e6-bd51-24ff43521234"),
+                    Title = "Thiết kế cơ sở dữ liệu và bảo mật",
+                    Description = "Thiết kế thực thể ERD, các cấu hình bảo mật CORS, Headers, và Phân quyền API.",
+                    Status = TaskStatus.Done,
+                    Priority = TaskPriority.Critical,
+                    AssigneeId = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
+                    CreatedById = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
+                    DueDate = new DateTime(2026, 7, 10, 0, 0, 0, DateTimeKind.Utc),
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Task
+                {
+                    Id = Guid.Parse("b22e22b2-2222-2222-2222-222222222222"),
+                    ProjectId = Guid.Parse("c7a52f44-8842-45e6-bd51-24ff43521234"),
+                    Title = "Xây dựng màn hình Dashboard trực quan",
+                    Description = "Phát triển giao diện Angular hiển thị biểu đồ danh sách công việc, phân tích trạng thái.",
+                    Status = TaskStatus.InProgress,
+                    Priority = TaskPriority.High,
+                    AssigneeId = Guid.Parse("2a98e29a-2454-4fbb-91bc-341aefba6222"),
+                    CreatedById = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
+                    DueDate = new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Utc),
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Task
+                {
+                    Id = Guid.Parse("c33e33c3-3333-3333-3333-333333333333"),
+                    ProjectId = Guid.Parse("c7a52f44-8842-45e6-bd51-24ff43521234"),
+                    Title = "Viết tài liệu API & tích hợp Swagger",
+                    Description = "Cập nhật Swagger OpenAPI để tự động hóa tài liệu cho các endpoint.",
+                    Status = TaskStatus.Todo,
+                    Priority = TaskPriority.Medium,
+                    AssigneeId = Guid.Parse("3f78e7aa-2e45-424a-81a1-f3b17789a333"),
+                    CreatedById = Guid.Parse("1d5952f4-bb85-451f-bfbd-ef1b11a5e111"),
+                    DueDate = new DateTime(2026, 7, 20, 0, 0, 0, DateTimeKind.Utc),
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         }
     }
 }

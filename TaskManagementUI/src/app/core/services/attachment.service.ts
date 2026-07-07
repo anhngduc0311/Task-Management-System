@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class AttachmentService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api';
+  private readonly baseUrl = 'http://localhost:5035/api';
 
   getAttachments(taskId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/tasks/${taskId}/attachments`);

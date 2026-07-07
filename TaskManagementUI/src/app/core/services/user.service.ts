@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class UserService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api/users';
+  private readonly baseUrl = 'http://localhost:5035/api/users';
 
   getUsers(page: number = 1, pageSize: number = 10, search: string = ''): Observable<any> {
     let params = new HttpParams()

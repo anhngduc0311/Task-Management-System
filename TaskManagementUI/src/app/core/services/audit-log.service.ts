@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class AuditLogService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://localhost:7180/api';
+  private readonly baseUrl = 'http://localhost:5035/api';
 
   getProjectAuditLogs(projectId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/projects/${projectId}/audit-logs`);
