@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -40,6 +41,7 @@ namespace TaskManagement.API.Controllers
         }
 
         [HttpPost("tasks/{taskId}/attachments")]
+        [EnableRateLimiting("upload-limiter")]
         public async Task<IActionResult> UploadAttachment(Guid taskId, IFormFile file)
         {
             if (file == null || file.Length == 0)

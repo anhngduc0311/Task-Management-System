@@ -46,7 +46,6 @@ namespace TaskManagement.API.Controllers
                 .ToListAsync();
 
             var logs = await _dbContext.AuditLogs
-                .Include(al => al.ChangedBy)
                 .Where(al =>
                     (al.EntityType == "Project" && al.EntityId == projectId.ToString()) ||
                     (al.EntityType == "ProjectMember" && al.EntityId.StartsWith(projectId.ToString())) ||
@@ -101,7 +100,6 @@ namespace TaskManagement.API.Controllers
                 .Select(ta => ta.Id.ToString());
 
             var logs = await _dbContext.AuditLogs
-                .Include(al => al.ChangedBy)
                 .Where(al =>
                     (al.EntityType == "Task" && al.EntityId == taskId.ToString()) ||
                     (al.EntityType == "TaskComment" && commentsQuery.Contains(al.EntityId)) ||

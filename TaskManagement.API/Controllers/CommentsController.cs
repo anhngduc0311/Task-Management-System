@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -40,7 +41,6 @@ namespace TaskManagement.API.Controllers
             }
 
             var comments = await _dbContext.TaskComments
-                .Include(c => c.User)
                 .Where(c => c.TaskId == taskId && !c.IsDeleted)
                 .OrderBy(c => c.CreatedAt)
                 .Select(c => new TaskCommentDto
@@ -60,6 +60,7 @@ namespace TaskManagement.API.Controllers
         }
 
         [HttpPost("tasks/{taskId}/comments")]
+        [EnableRateLimiting("comment-limiter")]
         public async Task<IActionResult> CreateComment(Guid taskId, [FromBody] CreateCommentDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

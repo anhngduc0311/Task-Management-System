@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,15 +22,18 @@ namespace TaskManagement.API.Controllers
         private readonly IAppDbContext _dbContext;
         private readonly IPermissionService _permissionService;
         private readonly IAuditService _auditService;
+        private readonly IConfiguration _configuration;
 
         public TasksController(
             IAppDbContext dbContext,
             IPermissionService permissionService,
-            IAuditService auditService)
+            IAuditService auditService,
+            IConfiguration configuration)
         {
             _dbContext = dbContext;
             _permissionService = permissionService;
             _auditService = auditService;
+            _configuration = configuration;
         }
 
         [HttpGet("projects/{projectId}/tasks")]
@@ -44,12 +48,13 @@ namespace TaskManagement.API.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
+            var defaultPageSize = _configuration.GetValue<int>("Pagination:DefaultPageSize", 10);
+            var maxPageSize = _configuration.GetValue<int>("Pagination:MaxPageSize", 100);
+
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            if (pageSize < 1 || pageSize > maxPageSize) pageSize = defaultPageSize;
 
             var query = _dbContext.Tasks
-                .Include(t => t.Assignee)
-                .Include(t => t.CreatedBy)
                 .Where(t => t.ProjectId == projectId);
 
             // Filtering
@@ -497,8 +502,6 @@ namespace TaskManagement.API.Controllers
         public async Task<IActionResult> GetMyTasks()
         {
             var tasks = await _dbContext.Tasks
-                .Include(t => t.Assignee)
-                .Include(t => t.CreatedBy)
                 .Where(t => t.AssigneeId == CurrentUserId)
                 .OrderByDescending(t => t.UpdatedAt)
                 .Select(t => new TaskDto

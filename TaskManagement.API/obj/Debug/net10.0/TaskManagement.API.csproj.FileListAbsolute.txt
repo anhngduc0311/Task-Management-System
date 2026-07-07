@@ -176,3 +176,5 @@ C:\Users\akzan\Desktop\Task Management System\TaskManagement.API\obj\Debug\net10
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.API\bin\Debug\net10.0\BCrypt-Net-Next.dll
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.API\obj\Debug\net10.0\TaskManagement.API.sourcelink.json
 C:\Users\akzan\Desktop\Task Management System\TaskManagement.API\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\akzan\Desktop\Task Management System\TaskManagement.API\bin\Debug\net10.0\Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore.dll
+C:\Users\akzan\Desktop\Task Management System\TaskManagement.API\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.InMemory.dll

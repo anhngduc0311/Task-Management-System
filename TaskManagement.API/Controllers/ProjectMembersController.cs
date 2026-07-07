@@ -41,7 +41,6 @@ namespace TaskManagement.API.Controllers
             }
 
             var members = await _dbContext.ProjectMembers
-                .Include(pm => pm.User)
                 .Where(pm => pm.ProjectId == projectId && pm.Status == ProjectMemberStatus.Active)
                 .Select(pm => new ProjectMemberDto
                 {

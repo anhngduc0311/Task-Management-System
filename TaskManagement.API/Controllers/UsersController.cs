@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,19 +18,24 @@ namespace TaskManagement.API.Controllers
     {
         private readonly IAppDbContext _dbContext;
         private readonly IAuditService _auditService;
+        private readonly IConfiguration _configuration;
 
-        public UsersController(IAppDbContext dbContext, IAuditService auditService)
+        public UsersController(IAppDbContext dbContext, IAuditService auditService, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _auditService = auditService;
+            _configuration = configuration;
         }
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
         {
+            var defaultPageSize = _configuration.GetValue<int>("Pagination:DefaultPageSize", 10);
+            var maxPageSize = _configuration.GetValue<int>("Pagination:MaxPageSize", 100);
+
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            if (pageSize < 1 || pageSize > maxPageSize) pageSize = defaultPageSize;
 
             var query = _dbContext.Users.AsQueryable();
 
