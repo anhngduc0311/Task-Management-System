@@ -8,6 +8,8 @@ using TaskManagement.Application.Interfaces;
 using TaskManagement.Application.Services;
 using TaskManagement.Infrastructure.Identity;
 using TaskManagement.Infrastructure.Persistence;
+using TaskManagement.Infrastructure.Storage;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,10 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
