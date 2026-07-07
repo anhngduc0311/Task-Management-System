@@ -66,6 +66,10 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
           <span class="material-symbols-rounded">group</span>
           Members
         </button>
+        <button class="tab-btn" [ngClass]="{ 'active': activeTab() === 'gantt' }" (click)="setTab('gantt')">
+          <span class="material-symbols-rounded">date_range</span>
+          Gantt Chart
+        </button>
         @if (canViewAuditLogs()) {
           <button class="tab-btn" [ngClass]="{ 'active': activeTab() === 'audit' }" (click)="setTab('audit')">
             <span class="material-symbols-rounded">history</span>
@@ -395,6 +399,95 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                 }
               }
             </div>
+          </div>
+        }
+
+        <!-- 4. GANTT CHART TAB -->
+        @if (activeTab() === 'gantt') {
+          <div class="gantt-tab glass-card">
+            <div class="flex justify-between align-center mb-16 flex-wrap gap-8">
+              <h3>Project Gantt Timeline</h3>
+              @if (timelineDays().length > 0) {
+                <div class="text-muted" style="font-size: 0.85rem;">
+                  Displaying {{ tasks().length }} tasks from {{ timelineDays()[0] | date:'mediumDate' }} to {{ timelineDays()[timelineDays().length - 1] | date:'mediumDate' }}
+                </div>
+              }
+            </div>
+
+            @if (tasks().length === 0) {
+              <div class="text-center py-48 text-muted">
+                No tasks available in this project to display on the timeline.
+              </div>
+            } @else {
+              <div class="gantt-wrapper">
+                <!-- Task Sidebar -->
+                <div class="gantt-sidebar">
+                  <div class="gantt-sidebar-header">Task Title</div>
+                  <div class="gantt-sidebar-rows">
+                    @for (task of tasks(); track task.id) {
+                      <div class="gantt-sidebar-row" (click)="openTaskDetails(task.id)">
+                        <div class="gantt-sidebar-title" [title]="task.title">{{ task.title }}</div>
+                        <div class="gantt-sidebar-meta">
+                          <span class="badge badge-sm" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">{{ task.priority }}</span>
+                          <span class="assignee-name" style="font-size: 0.75rem;">{{ task.assigneeName || 'Unassigned' }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Timeline Grid (Scrollable) -->
+                <div class="gantt-timeline-container">
+                  <div class="gantt-timeline-header" [style.grid-template-columns]="'repeat(' + timelineDays().length + ', 45px)'">
+                    @for (day of timelineDays(); track day.getTime()) {
+                      <div class="gantt-timeline-header-cell" [class.is-today]="isToday(day)">
+                        <div class="day-month">{{ day | date:'MMM' }}</div>
+                        <div class="day-num">{{ day | date:'d' }}</div>
+                        <div class="day-name">{{ day | date:'EEE' }}</div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="gantt-timeline-rows">
+                    @for (task of tasks(); track task.id) {
+                      <div class="gantt-timeline-row" [style.grid-template-columns]="'repeat(' + timelineDays().length + ', 45px)'">
+                        @for (day of timelineDays(); track day.getTime()) {
+                          <div class="gantt-grid-cell" [class.is-today]="isToday(day)"></div>
+                        }
+
+                        @if (getTaskBarPosition(task)) {
+                          <div 
+                            class="gantt-bar-wrapper"
+                            [style.grid-column]="getTaskBarPosition(task)"
+                            (click)="openTaskDetails(task.id)"
+                          >
+                            <div class="gantt-bar" [ngClass]="'gantt-bar-' + task.status.toLowerCase()">
+                              <span class="gantt-bar-title">{{ task.title }}</span>
+                              
+                              <!-- Premium Hover Tooltip -->
+                              <div class="gantt-bar-tooltip">
+                                <div class="tooltip-title">{{ task.title }}</div>
+                                <div class="tooltip-detail">
+                                  <span>Status:</span> 
+                                  <span class="badge badge-sm" [ngClass]="'badge-status-' + task.status.toLowerCase()">{{ getStatusLabel(task.status) }}</span>
+                                </div>
+                                <div class="tooltip-detail">
+                                  <span>Priority:</span>
+                                  <span class="badge badge-sm" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">{{ task.priority }}</span>
+                                </div>
+                                <div class="tooltip-detail"><span>Assignee:</span> {{ task.assigneeName || 'Unassigned' }}</div>
+                                <div class="tooltip-detail"><span>Start Date:</span> {{ task.createdAt | date:'mediumDate' }}</div>
+                                <div class="tooltip-detail"><span>Due Date:</span> {{ task.dueDate ? (task.dueDate | date:'mediumDate') : 'No due date' }}</div>
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         }
       </div>
@@ -966,6 +1059,9 @@ export class ProjectDetail implements OnInit {
   // Task details drawer
   protected selectedTaskId = signal<string | null>(null);
 
+  // Gantt Chart State
+  protected timelineDays = signal<Date[]>([]);
+
   ngOnInit(): void {
     this.projectId = this.route.snapshot.paramMap.get('id') || '';
     if (this.projectId) {
@@ -1023,6 +1119,7 @@ export class ProjectDetail implements OnInit {
     this.taskService.getProjectTasks(this.projectId, this.taskFilters).subscribe({
       next: (res) => {
         this.tasks.set(res.items || []);
+        this.generateTimeline();
         this.loading.set(false);
       },
       error: () => {
@@ -1382,5 +1479,108 @@ export class ProjectDetail implements OnInit {
     if (action.endsWith('StatusChanged')) return 'changed status of';
     if (action.endsWith('AssigneeChanged')) return 'reassigned';
     return action.toLowerCase();
+  }
+
+  // Gantt Chart Calculations
+  generateTimeline() {
+    const projectTasks = this.tasks();
+    if (projectTasks.length === 0) {
+      const start = new Date();
+      start.setDate(start.getDate() - 5);
+      const end = new Date();
+      end.setDate(end.getDate() + 25);
+      this.timelineDays.set(this.getDaysArray(start, end));
+      return;
+    }
+
+    let minDate: Date | null = null;
+    let maxDate: Date | null = null;
+
+    projectTasks.forEach(task => {
+      const created = new Date(task.createdAt);
+      if (minDate === null || created < minDate) {
+        minDate = created;
+      }
+      
+      const due = task.dueDate ? new Date(task.dueDate) : created;
+      if (maxDate === null || due > maxDate) {
+        maxDate = due;
+      }
+    });
+
+    const finalMin = minDate ? new Date(minDate) : new Date();
+    const finalMax = maxDate ? new Date(maxDate) : new Date();
+
+    // Clamp timeline to avoid extreme spans
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    if (finalMin < thirtyDaysAgo) {
+      finalMin.setTime(thirtyDaysAgo.getTime());
+    }
+
+    const ninetyDaysAhead = new Date();
+    ninetyDaysAhead.setDate(ninetyDaysAhead.getDate() + 90);
+    if (finalMax > ninetyDaysAhead) {
+      finalMax.setTime(ninetyDaysAhead.getTime());
+    }
+
+    // Ensure min range of 30 days
+    const minTimelineEnd = new Date(finalMin);
+    minTimelineEnd.setDate(minTimelineEnd.getDate() + 30);
+    if (finalMax < minTimelineEnd) {
+      finalMax.setTime(minTimelineEnd.getTime());
+    }
+
+    finalMin.setHours(0, 0, 0, 0);
+    finalMax.setHours(0, 0, 0, 0);
+
+    this.timelineDays.set(this.getDaysArray(finalMin, finalMax));
+  }
+
+  getDaysArray(start: Date, end: Date): Date[] {
+    const days: Date[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return days;
+  }
+
+  isToday(date: Date): boolean {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+  }
+
+  getTaskBarPosition(task: any): string | null {
+    const days = this.timelineDays();
+    if (days.length === 0) return null;
+
+    const start = new Date(task.createdAt);
+    start.setHours(0, 0, 0, 0);
+
+    const end = task.dueDate ? new Date(task.dueDate) : new Date(start);
+    end.setHours(0, 0, 0, 0);
+
+    const timelineStart = days[0];
+    const timelineEnd = days[days.length - 1];
+
+    if (end < timelineStart || start > timelineEnd) {
+      return null;
+    }
+
+    let startIndex = days.findIndex(d => d.getTime() === start.getTime());
+    if (startIndex === -1) {
+      startIndex = 0;
+    }
+
+    let endIndex = days.findIndex(d => d.getTime() === end.getTime());
+    if (endIndex === -1) {
+      endIndex = days.length - 1;
+    }
+
+    return `${startIndex + 1} / ${endIndex + 2}`;
   }
 }
