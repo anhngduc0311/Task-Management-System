@@ -74,10 +74,10 @@ namespace TaskManagement.API.Controllers
                 return NotFound(new { message = "Project not found." });
             }
 
-            var user = await _dbContext.Users.FindAsync(dto.UserId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == dto.Email.Trim().ToLower());
             if (user == null || user.Status == UserStatus.Inactive)
             {
-                return BadRequest(new { message = "User not found or is inactive in the system." });
+                return BadRequest(new { message = "User with this email was not found or is inactive." });
             }
 
             if (!Enum.TryParse<ProjectMemberRole>(dto.RoleInProject, out var role))
@@ -86,7 +86,7 @@ namespace TaskManagement.API.Controllers
             }
 
             var existingMember = await _dbContext.ProjectMembers
-                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == dto.UserId);
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == user.Id);
 
             if (existingMember != null)
             {
@@ -105,7 +105,7 @@ namespace TaskManagement.API.Controllers
 
                 await _auditService.LogAsync(
                     entityType: "ProjectMember",
-                    entityId: $"{projectId}_{dto.UserId}",
+                    entityId: $"{projectId}_{user.Id}",
                     action: "ProjectMemberReactivated",
                     changedById: CurrentUserId,
                     oldValue: oldRole,
@@ -119,7 +119,7 @@ namespace TaskManagement.API.Controllers
                 var newMember = new ProjectMember
                 {
                     ProjectId = projectId,
-                    UserId = dto.UserId,
+                    UserId = user.Id,
                     RoleInProject = role,
                     JoinedAt = DateTime.UtcNow,
                     Status = ProjectMemberStatus.Active
@@ -130,7 +130,7 @@ namespace TaskManagement.API.Controllers
 
                 await _auditService.LogAsync(
                     entityType: "ProjectMember",
-                    entityId: $"{projectId}_{dto.UserId}",
+                    entityId: $"{projectId}_{user.Id}",
                     action: "ProjectMemberAdded",
                     changedById: CurrentUserId,
                     newValue: role.ToString(),

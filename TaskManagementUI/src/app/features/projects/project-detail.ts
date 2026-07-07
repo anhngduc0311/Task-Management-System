@@ -546,20 +546,20 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
             <form #memberForm="ngForm" (ngSubmit)="onAddMemberSubmit(memberForm)">
               <div class="modal-body">
                 <div class="form-group">
-                  <label class="form-label" for="member-userid">Enter User ID (Guid)</label>
+                  <label class="form-label" for="member-email">Enter User Email</label>
                   <input 
-                    type="text" 
-                    id="member-userid" 
-                    name="userId" 
+                    type="email" 
+                    id="member-email" 
+                    name="email" 
                     class="form-input" 
-                    [(ngModel)]="newMemberData.userId" 
-                    #memUid="ngModel" 
+                    [(ngModel)]="newMemberData.email" 
+                    #memEmail="ngModel" 
                     required
-                    pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-                    placeholder="e.g. 8a4b4ef9-7ec7-4dbb-8fb6-82ff4b4ab456"
+                    email
+                    placeholder="e.g. user@example.com"
                   />
-                  @if (memUid.invalid && (memUid.dirty || memUid.touched)) {
-                    <span class="error-text">Must be a valid Guid string.</span>
+                  @if (memEmail.invalid && (memEmail.dirty || memEmail.touched)) {
+                    <span class="error-text">Must be a valid email address.</span>
                   }
                 </div>
 
@@ -900,7 +900,7 @@ export class ProjectDetail implements OnInit {
 
   protected showAddMemberModal = signal(false);
   protected addingMember = signal(false);
-  protected newMemberData = { userId: '', roleInProject: 'Member' };
+  protected newMemberData = { email: '', roleInProject: 'Member' };
 
   // Task details drawer
   protected selectedTaskId = signal<string | null>(null);
@@ -1170,7 +1170,7 @@ export class ProjectDetail implements OnInit {
 
   // Members Management
   openAddMemberModal() {
-    this.newMemberData = { userId: '', roleInProject: 'Member' };
+    this.newMemberData = { email: '', roleInProject: 'Member' };
     this.showAddMemberModal.set(true);
   }
 

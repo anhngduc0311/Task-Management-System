@@ -6,7 +6,8 @@ namespace TaskManagement.Application.DTOs.Projects
     public class AddProjectMemberDto
     {
         [Required]
-        public Guid UserId { get; set; }
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
 
         [Required]
         [RegularExpression("^(ProjectManager|Member|Guest)$", ErrorMessage = "RoleInProject must be 'ProjectManager', 'Member', or 'Guest'.")]

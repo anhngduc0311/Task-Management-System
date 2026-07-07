@@ -38,7 +38,7 @@ export class ProjectService {
     return this.http.get<any>(`${this.baseUrl}/${projectId}/members`);
   }
 
-  addMember(projectId: string, data: { userId: string; roleInProject: string }): Observable<any> {
+  addMember(projectId: string, data: { email: string; roleInProject: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${projectId}/members`, data);
   }
 
