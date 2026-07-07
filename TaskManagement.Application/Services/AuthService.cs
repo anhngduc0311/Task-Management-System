@@ -64,7 +64,9 @@ namespace TaskManagement.Application.Services
                 RefreshToken = refreshToken,
                 Expiration = DateTime.UtcNow.AddMinutes(expiryMinutes),
                 FullName = user.FullName,
-                Email = user.Email
+                Email = user.Email,
+                UserId = user.Id,
+                Roles = roles
             };
         }
 
@@ -110,7 +112,9 @@ namespace TaskManagement.Application.Services
                 RefreshToken = newRefreshToken,
                 Expiration = DateTime.UtcNow.AddMinutes(15),
                 FullName = user.FullName,
-                Email = user.Email
+                Email = user.Email,
+                UserId = user.Id,
+                Roles = roles
             };
         }
 
@@ -139,6 +143,34 @@ namespace TaskManagement.Application.Services
 
             user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RegisterAsync(RegisterRequest request)
+        {
+            var exists = await _dbContext.Users.AnyAsync(u => u.Email == request.Email);
+            if (exists) return false;
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                FullName = request.FullName,
+                Email = request.Email,
+                PasswordHash = _passwordHasher.HashPassword(request.Password),
+                Status = Domain.Enums.UserStatus.Active,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.Users.Add(user);
+
+            var memberRole = await _dbContext.Roles.FindAsync(3); // 3 is "Member"
+            if (memberRole != null)
+            {
+                _dbContext.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = memberRole.Id });
+            }
 
             await _dbContext.SaveChangesAsync();
             return true;

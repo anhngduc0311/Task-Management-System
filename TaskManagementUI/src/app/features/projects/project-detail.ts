@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ProjectService } from '../../core/services/project.service';
 import { TaskService } from '../../core/services/task.service';
@@ -866,6 +867,7 @@ export class ProjectDetail implements OnInit {
   protected viewMode = signal<'kanban' | 'table'>('kanban');
   protected editOnOpen = signal(false);
   protected projectId: string = '';
+  protected pendingCreateTask = false;
 
   // Task Kanban configuration
   protected kanbanColumns = [
@@ -910,10 +912,14 @@ export class ProjectDetail implements OnInit {
     }
     this.route.queryParams.subscribe(params => {
       if (params['createTask'] === 'true') {
-        if (this.canCreateTask()) {
-          this.openCreateTaskModal();
+        if (this.project()) {
+          if (this.canCreateTask()) {
+            this.openCreateTaskModal();
+          } else {
+            this.toastService.error('You do not have permission to create tasks in this project.');
+          }
         } else {
-          this.toastService.error('You do not have permission to create tasks in this project.');
+          this.pendingCreateTask = true;
         }
         // Clear query parameters
         this.router.navigate([], { relativeTo: this.route, queryParams: { createTask: null }, queryParamsHandling: 'merge' });
@@ -923,13 +929,25 @@ export class ProjectDetail implements OnInit {
 
   loadProjectDetails() {
     this.loading.set(true);
-    this.projectService.getProject(this.projectId).subscribe({
-      next: (proj) => {
-        this.project.set(proj);
+    forkJoin({
+      project: this.projectService.getProject(this.projectId),
+      members: this.projectService.getMembers(this.projectId)
+    }).subscribe({
+      next: ({ project, members }) => {
+        this.project.set(project);
+        this.members.set(members || []);
         this.loadTasks();
-        this.loadMembers();
         if (this.canViewAuditLogs()) {
           this.loadAuditLogs();
+        }
+
+        if (this.pendingCreateTask) {
+          this.pendingCreateTask = false;
+          if (this.canCreateTask()) {
+            this.openCreateTaskModal();
+          } else {
+            this.toastService.error('You do not have permission to create tasks in this project.');
+          }
         }
       },
       error: () => {

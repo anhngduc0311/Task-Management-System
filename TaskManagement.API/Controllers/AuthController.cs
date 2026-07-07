@@ -36,6 +36,21 @@ namespace TaskManagement.API.Controllers
             return Ok(response);
         }
 
+        [HttpPost("register")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _authService.RegisterAsync(request);
+            if (!success)
+            {
+                return BadRequest(new { message = "Email is already registered." });
+            }
+
+            return Ok(new { message = "Registration successful." });
+        }
+
         [HttpPost("refresh-token")]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)

@@ -46,6 +46,10 @@ export class AuthService {
     this.currentUser.set(null);
   }
 
+  register(request: any) {
+    return this.http.post<any>(`${this.baseUrl}/register`, request);
+  }
+
   changePassword(request: any) {
     return this.http.post(`${this.baseUrl}/change-password`, request);
   }

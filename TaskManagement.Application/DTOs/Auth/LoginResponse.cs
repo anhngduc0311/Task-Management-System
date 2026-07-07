@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace TaskManagement.Application.DTOs.Auth
 {
@@ -9,5 +10,7 @@ namespace TaskManagement.Application.DTOs.Auth
         public DateTime Expiration { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
+        public List<string> Roles { get; set; } = new();
     }
 }
