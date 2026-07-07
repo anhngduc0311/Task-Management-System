@@ -69,5 +69,7 @@ yarn-error.log*
 ## Project Uploads & Temp Files
 TaskManagement.API/wwwroot/uploads/*
 !TaskManagement.API/wwwroot/uploads/.gitkeep
+TaskManagement.API/Uploads/*
+!TaskManagement.API/Uploads/.gitkeep
 temp/
 tmp/
