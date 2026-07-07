@@ -47,9 +47,8 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 ### 1.4. Những gì KHÔNG có trong MVP
 
 > [!IMPORTANT]
-> Các tính năng sau **bị khóa hoàn toàn** khỏi phạm vi MVP. Bất kỳ yêu cầu thêm tính năng này đều phải có quyết định chính thức.
+> Các tính năng sau **bị khóa hoàn toàn** khỏi phạm vi MVP (ngoại trừ Biểu đồ Gantt đã được triển khai bổ sung ở Phase 7). Bất kỳ yêu cầu thêm tính năng này đều phải có quyết định chính thức.
 
-- Biểu đồ Gantt
 - AI gợi ý / tự động hóa
 - Time tracking phức tạp
 - Real-time bằng SignalR (dùng polling/manual refresh trong MVP)
@@ -70,6 +69,7 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 - **FR-01.3** Frontend lưu token theo cơ chế an toàn (không lưu trong localStorage nếu có thể).
 - **FR-01.4** Token hết hạn phải được xử lý: refresh token hoặc yêu cầu đăng nhập lại.
 - **FR-01.5** Đăng xuất phải vô hiệu hoá session/token phía server.
+- **FR-01.6** Người dùng mới có thể tự đăng ký tài khoản (Register) bằng Email, Tên đầy đủ và Mật khẩu.
 
 #### FR-02: Quản lý người dùng
 - **FR-02.1** Admin có thể xem danh sách người dùng.
@@ -86,14 +86,14 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 - **FR-03.5** Người dùng chỉ thấy project mà họ là thành viên.
 
 #### FR-04: Quản lý thành viên Project
-- **FR-04.1** PM/Admin có thể thêm thành viên vào project.
+- **FR-04.1** PM/Admin có thể thêm thành viên vào project bằng cách nhập Email của họ.
 - **FR-04.2** PM/Admin có thể gán vai trò trong project cho từng thành viên (PM / Member / Guest).
 - **FR-04.3** PM/Admin có thể xóa thành viên khỏi project.
 - **FR-04.4** Một user có thể có vai trò khác nhau ở các project khác nhau.
 
 #### FR-05: Quản lý Task
 - **FR-05.1** PM/Member có thể tạo task trong project.
-- **FR-05.2** Task có: Tiêu đề, Mô tả, Trạng thái, Ưu tiên, Assignee, DueDate, Người tạo.
+- **FR-05.2** Task có: Tiêu đề, Mô tả, Trạng thái, Ưu tiên, Assignee, DueDate, Người tạo, Ngày hoàn thành thực tế (CompletedAt).
 - **FR-05.3** Task có các trạng thái: `Todo → In Progress → In Review → Done → Cancelled`.
 - **FR-05.4** Task có các mức ưu tiên: `Low / Medium / High / Critical`.
 - **FR-05.5** PM/Admin có thể giao task cho thành viên trong project.
@@ -102,6 +102,9 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 - **FR-05.8** Member chỉ được sửa task của mình (giới hạn trường: description, status).
 - **FR-05.9** PM/Admin có thể xóa task (xóa mềm).
 - **FR-05.10** Task hỗ trợ **optimistic concurrency**: không được ghi đè ngầm khi có xung đột.
+- **FR-05.11** Hỗ trợ phân cấp Task cha - con (Parent-Child Hierarchy): Cho phép một Task chứa các Task con. Giao diện hiển thị trực quan và hệ thống tự động kiểm tra đệ quy chống vòng lặp liên kết (circular dependency).
+- **FR-05.12** Kiểm tra ràng buộc khi xóa Task cha: Không cho phép xóa Task cha nếu có các Task con chưa hoàn thành (`Todo`/`InProgress`/`InReview`). Khi xóa Task cha thành công (xóa mềm), các Task con sẽ được gỡ liên kết tự động (sét `ParentTaskId` thành null).
+- **FR-05.13** Hỗ trợ cấu hình Trường dữ liệu động (Dynamic Fields) tùy chỉnh theo từng dự án với các kiểu dữ liệu: Text, Number, Date, Boolean, Select, MultiSelect. Có thể thiết lập bắt buộc nhập (IsRequired), giá trị mặc định (DefaultValue) và thứ tự hiển thị (DisplayOrder).
 
 #### FR-06: Bình luận Task
 - **FR-06.1** Member / PM / Admin có thể thêm bình luận vào task.
@@ -127,11 +130,19 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 - **FR-09.1** Hiển thị danh sách task theo project.
 - **FR-09.2** Hiển thị task được giao cho "tôi" (My Tasks).
 - **FR-09.3** Hiển thị số lượng task theo trạng thái (thống kê cơ bản).
+- **FR-09.4** Tích hợp biểu đồ Gantt (Gantt Chart Tab) trong giao diện chi tiết dự án hiển thị thời gian bắt đầu và kết thúc của các task một cách trực quan.
 
 #### FR-10: Audit Log
-- **FR-10.1** Hệ thống ghi log tự động cho các hành động: tạo task, sửa task, đổi trạng thái, đổi assignee, đổi deadline, xóa task, thêm/xóa thành viên project, thay đổi quyền.
+- **FR-10.1** Hệ thống ghi log tự động cho các hành động: tạo task, sửa task, đổi trạng thái, đổi assignee, đổi deadline, thay đổi Task cha/con, xóa task, thêm/xóa thành viên project, thay đổi quyền, tạo/sửa/xóa trường dữ liệu động.
 - **FR-10.2** PM/Admin có thể xem audit log của project.
 - **FR-10.3** Mỗi log entry ghi: EntityType, EntityId, Action, ChangedBy, ChangedAt, OldValue, NewValue.
+
+#### FR-11: Báo cáo hiệu suất công việc (Work Performance & Reports)
+- **FR-11.1** Cung cấp giao diện báo cáo tổng hợp trực quan cho phép xem nhanh hiệu suất dự án.
+- **FR-11.2** Thống kê các chỉ số KPI: Tổng số Task, Task đã hoàn thành (số lượng hoàn thành đúng hạn), Task quá hạn (Overdue), và tỷ lệ hoàn thành (Completion Rate).
+- **FR-11.3** Hiển thị biểu đồ phân tích: Trạng thái task (Donut chart), Mức độ ưu tiên task (Bar chart), và Danh sách những người được giao việc tích cực nhất (Top Assignees).
+- **FR-11.4** Bộ lọc nâng cao: Lọc theo dự án, người nhận, trạng thái, mức độ ưu tiên, khoảng thời gian tạo task, và đặc biệt là lọc động dựa theo các Trường dữ liệu động (Dynamic Fields) của dự án đang chọn.
+- **FR-11.5** Danh sách chi tiết các Task quá hạn, Task chưa hoàn thành, Task đã hoàn thành có phân trang (pagination) và liên kết mở nhanh chi tiết Task.
 
 ---
 
@@ -234,6 +245,8 @@ Users (
   ExternalAuthId NVARCHAR(256)     NULL,
   Status         NVARCHAR(20)      NOT NULL DEFAULT 'Active',  -- Active | Inactive
   AvatarUrl      NVARCHAR(512)     NULL,
+  RefreshToken   NVARCHAR(512)     NULL,         -- Token để làm mới phiên đăng nhập
+  RefreshTokenExpiryTime DATETIME2 NULL,         -- Thời gian hết hạn refresh token
   CreatedAt      DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
   UpdatedAt      DATETIME2         NOT NULL DEFAULT GETUTCDATE()
 )
@@ -284,21 +297,23 @@ ProjectMembers (
 #### Bảng `Tasks`
 ```sql
 Tasks (
-  Id          UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
-  ProjectId   UNIQUEIDENTIFIER  NOT NULL FK → Projects.Id,
-  Title       NVARCHAR(200)     NOT NULL,
-  Description NVARCHAR(5000)    NULL,
-  Status      NVARCHAR(20)      NOT NULL DEFAULT 'Todo',
-              -- Todo | InProgress | InReview | Done | Cancelled
-  Priority    NVARCHAR(20)      NOT NULL DEFAULT 'Medium',
-              -- Low | Medium | High | Critical
-  AssigneeId  UNIQUEIDENTIFIER  NULL FK → Users.Id,
-  CreatedById UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
-  DueDate     DATE              NULL,
-  IsDeleted   BIT               NOT NULL DEFAULT 0,
-  CreatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
-  UpdatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
-  RowVersion  ROWVERSION        NOT NULL  -- Optimistic concurrency
+  Id           UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProjectId    UNIQUEIDENTIFIER  NOT NULL FK → Projects.Id,
+  Title        NVARCHAR(200)     NOT NULL,
+  Description  NVARCHAR(5000)    NULL,
+  Status       NVARCHAR(20)      NOT NULL DEFAULT 'Todo',
+               -- Todo | InProgress | InReview | Done | Cancelled
+  Priority     NVARCHAR(20)      NOT NULL DEFAULT 'Medium',
+               -- Low | Medium | High | Critical
+  AssigneeId   UNIQUEIDENTIFIER  NULL FK → Users.Id,
+  CreatedById  UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
+  DueDate      DATE              NULL,
+  CompletedAt  DATETIME2         NULL,          -- Thời gian hoàn thành thực tế (Khi chuyển sang Done)
+  ParentTaskId UNIQUEIDENTIFIER  NULL FK → Tasks.Id, -- Khóa ngoại trỏ đến Task cha (tự tham chiếu)
+  IsDeleted    BIT               NOT NULL DEFAULT 0,
+  CreatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  RowVersion   ROWVERSION        NOT NULL  -- Concurrency check (optimistic concurrency)
 )
 
 -- Indexes
@@ -306,6 +321,34 @@ CREATE INDEX IX_Tasks_ProjectId ON Tasks(ProjectId) WHERE IsDeleted = 0;
 CREATE INDEX IX_Tasks_AssigneeId ON Tasks(AssigneeId) WHERE IsDeleted = 0;
 CREATE INDEX IX_Tasks_Status ON Tasks(ProjectId, Status) WHERE IsDeleted = 0;
 CREATE INDEX IX_Tasks_DueDate ON Tasks(DueDate) WHERE IsDeleted = 0;
+```
+
+#### Bảng `DynamicFieldDefinitions` (Bổ sung mới)
+```sql
+DynamicFieldDefinitions (
+  Id           UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProjectId    UNIQUEIDENTIFIER  NOT NULL FK → Projects.Id,
+  FieldName    NVARCHAR(100)     NOT NULL,
+  FieldKey     NVARCHAR(100)     NOT NULL,     -- Key định danh (ví dụ: customer_name, build_version)
+  FieldType    NVARCHAR(50)      NOT NULL,     -- Text | Number | Date | Boolean | Select | MultiSelect
+  IsRequired   BIT               NOT NULL DEFAULT 0,
+  Options      NVARCHAR(MAX)     NULL,         -- Định dạng JSON Array chứa danh sách các tùy chọn
+  DefaultValue NVARCHAR(MAX)     NULL,
+  DisplayOrder INT               NOT NULL DEFAULT 0,
+  IsActive     BIT               NOT NULL DEFAULT 1,
+  CreatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+```
+
+#### Bảng `TaskDynamicFieldValues` (Bổ sung mới)
+```sql
+TaskDynamicFieldValues (
+  TaskId         UNIQUEIDENTIFIER  FK → Tasks.Id,
+  DynamicFieldId UNIQUEIDENTIFIER  FK → DynamicFieldDefinitions.Id,
+  FieldValue     NVARCHAR(MAX)     NULL,         -- Giá trị lưu dưới dạng chuỗi (JSON array đối với MultiSelect)
+  PRIMARY KEY (TaskId, DynamicFieldId)
+)
 ```
 
 #### Bảng `TaskComments`
@@ -362,8 +405,10 @@ CREATE INDEX IX_AuditLogs_ChangedAt ON AuditLogs(ChangedAt DESC);
 #### Authentication
 ```
 POST   /api/auth/login          → Đăng nhập, trả JWT
+POST   /api/auth/register       → Đăng ký người dùng mới
 POST   /api/auth/logout         → Đăng xuất
 POST   /api/auth/refresh-token  → Làm mới token
+POST   /api/auth/change-password → Đổi mật khẩu
 ```
 
 #### Users
@@ -371,7 +416,6 @@ POST   /api/auth/refresh-token  → Làm mới token
 GET    /api/users               → [Admin] Danh sách users (paginated)
 GET    /api/users/{id}          → Chi tiết user
 PUT    /api/users/{id}          → Cập nhật thông tin cá nhân
-POST   /api/users/{id}/change-password → Đổi mật khẩu
 PUT    /api/users/{id}/status   → [Admin] Vô hiệu hoá / kích hoạt
 ```
 
@@ -387,7 +431,7 @@ DELETE /api/projects/{id}       → Xóa mềm project (Admin)
 #### Project Members
 ```
 GET    /api/projects/{id}/members         → Danh sách thành viên
-POST   /api/projects/{id}/members         → Thêm thành viên
+POST   /api/projects/{id}/members         → Thêm thành viên (bằng Email)
 PUT    /api/projects/{id}/members/{uid}   → Đổi vai trò thành viên
 DELETE /api/projects/{id}/members/{uid}   → Xóa thành viên
 ```
@@ -397,12 +441,24 @@ DELETE /api/projects/{id}/members/{uid}   → Xóa thành viên
 GET    /api/projects/{pid}/tasks          → Danh sách task (filter + paginate)
 POST   /api/projects/{pid}/tasks          → Tạo task mới
 GET    /api/tasks/{id}                    → Chi tiết task
-PUT    /api/tasks/{id}                    → Sửa task (kèm RowVersion)
+PUT    /api/tasks/{id}                    → Sửa task (kèm RowVersion, ParentTaskId và DynamicValues)
 PATCH  /api/tasks/{id}/status             → Đổi trạng thái
 PATCH  /api/tasks/{id}/assignee           → Đổi assignee
-DELETE /api/tasks/{id}                    → Xóa mềm task
-
+DELETE /api/tasks/{id}                    → Xóa mềm task (chỉ xóa khi các task con đã Done hoặc Cancelled)
+GET    /api/tasks/{id}/children           → Danh sách task con
+PATCH  /api/tasks/{id}/parent             → Gán task cha
+PATCH  /api/tasks/{id}/remove-parent      → Gỡ liên kết task cha
 GET    /api/tasks/my-tasks                → Task được giao cho tôi
+```
+
+#### Dynamic Fields
+```
+GET    /api/projects/{projectId}/dynamic-fields → Lấy danh sách trường động của dự án
+POST   /api/projects/{projectId}/dynamic-fields → Tạo trường động mới cho dự án
+PUT    /api/dynamic-fields/{fieldId}            → Cập nhật định nghĩa trường động
+DELETE /api/dynamic-fields/{fieldId}            → Xóa định nghĩa trường động
+GET    /api/tasks/{taskId}/dynamic-values       → Lấy giá trị trường động của task
+PUT    /api/tasks/{taskId}/dynamic-values       → Cập nhật giá trị trường động của task
 ```
 
 #### Comments
@@ -419,6 +475,19 @@ GET    /api/tasks/{tid}/attachments       → Danh sách attachment
 POST   /api/tasks/{tid}/attachments       → Upload file
 GET    /api/attachments/{id}/download     → Tải file (có kiểm tra quyền)
 DELETE /api/attachments/{id}              → Xóa attachment
+```
+
+#### Reports
+```
+GET    /api/reports/work-summary          → Tóm tắt KPI công việc
+GET    /api/reports/tasks-by-status       → Báo cáo số lượng task theo trạng thái
+GET    /api/reports/tasks-by-priority     → Báo cáo số lượng task theo mức độ ưu tiên
+GET    /api/reports/tasks-by-assignee     → Báo cáo số lượng task theo người xử lý
+GET    /api/reports/tasks-by-project      → Báo cáo số lượng task theo dự án
+GET    /api/reports/overdue-tasks         → Danh sách task quá hạn (phân trang)
+GET    /api/reports/completed-tasks       → Danh sách task đã hoàn thành (phân trang)
+GET    /api/reports/uncompleted-tasks     → Danh sách task chưa hoàn thành (phân trang)
+POST   /api/reports/advanced              → Lọc nâng cao các task báo cáo
 ```
 
 #### Audit Logs
@@ -751,14 +820,31 @@ Phase 0 (Setup)
     → Phase 4E (Comment, Attachment UI)
     → Phase 5 (Security + Ops)
     → Phase 6 (Testing + QA)
+    → Phase 7 (Advanced Features: Gantt Chart, Task Hierarchy, Dynamic Fields & Work Reports)
 ```
 
 ---
 
+### PHASE 7 — Advanced Features (Gantt Chart, Task Hierarchy, Dynamic Fields & Work Reports)
+
+| # | Task | Độ phức tạp | Ưu tiên | Ghi chú |
+|---|---|:---:|:---:|---|
+| T7.1 | Cập nhật cấu trúc DB (Migration) cho Dynamic Fields và Task hierarchy (ParentTaskId, CompletedAt) | M | P1 | Đã hoàn thành |
+| T7.2 | Viết logic nghiệp vụ phát hiện chu trình khép kín (circular dependency) cho Parent-Child task | M | P1 | Đã hoàn thành |
+| T7.3 | Xây dựng API và giao diện UI quản lý danh sách Dynamic Fields của Project | L | P1 | Đã hoàn thành |
+| T7.4 | Tích hợp Dynamic Fields vào form tạo/sửa Task (validate, load và save giá trị động) | L | P1 | Đã hoàn thành |
+| T7.5 | Bổ sung tab Gantt Chart hiển thị dòng thời gian trực quan của các Task | M | P1 | Đã hoàn thành |
+| T7.6 | Thiết kế API tổng hợp báo cáo (KPIs, status, priority, assignees, overdue/completed tasks) | L | P1 | Đã hoàn thành |
+| T7.7 | Xây dựng giao diện báo cáo "Work Performance & Reports" đẹp mắt, trực quan với các biểu đồ | L | P1 | Đã hoàn thành |
+| T7.8 | Tích hợp bộ lọc Dynamic Fields tùy chỉnh và lọc theo khoảng thời gian vào Báo cáo | L | P1 | Đã hoàn thành |
+| T7.9 | Viết integration tests cho phân cấp Task và báo cáo hiệu suất | M | P1 | Đã hoàn thành |
+
+---
+
 > [!TIP]
-> **Điểm cần chốt trước khi bắt đầu code:**
-> 1. Loại file storage sẽ dùng (Local folder / Azure Blob / AWS S3)? trà lời: dùng local folder
-> 2. Kích thước file tối đa và loại file được phép? trả lời: 20mb, file dạng ảnh
-> 3. Member có được sửa task của người khác không? trả lời: ko
-> 4. Có cần Guest role trong MVP không? trà lời: ko
-> 5. Phiên JWT hết hạn sau bao lâu? trà lời: 15 phút  
+> **Điểm cần chốt trước khi bắt đầu code (UAT & Release):**
+> 1. Loại file storage sẽ dùng (Local folder / Azure Blob / AWS S3)? trà lời: dùng local folder (Đã triển khai)
+> 2. Kích thước file tối đa và loại file được phép? trả lời: 20mb, file dạng ảnh (Đã triển khai)
+> 3. Member có được sửa task của người khác không? trả lời: ko (Đã triển khai)
+> 4. Có cần Guest role trong MVP không? trà lời: ko (Đã bỏ qua trong MVP)
+> 5. Phiên JWT hết hạn sau bao lâu? trà lời: 15 phút (Đã triển khai với cơ chế Access/Refresh Token)
