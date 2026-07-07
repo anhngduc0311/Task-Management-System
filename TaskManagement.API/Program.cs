@@ -140,6 +140,26 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Automatically apply migrations on startup (Production/Staging environments)
+if (!builder.Configuration.GetValue<bool>("UseInMemoryDatabase"))
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<AppDbContext>();
+            Log.Information("Applying pending database migrations...");
+            context.Database.Migrate();
+            Log.Information("Database migrations applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while migrating the database.");
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
