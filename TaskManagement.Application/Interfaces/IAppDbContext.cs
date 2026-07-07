@@ -17,6 +17,8 @@ namespace TaskManagement.Application.Interfaces
         DbSet<TaskComment> TaskComments { get; }
         DbSet<TaskAttachment> TaskAttachments { get; }
         DbSet<AuditLog> AuditLogs { get; }
+        DbSet<DynamicFieldDefinition> DynamicFieldDefinitions { get; }
+        DbSet<TaskDynamicFieldValue> TaskDynamicFieldValues { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

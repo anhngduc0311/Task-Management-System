@@ -22,6 +22,8 @@ namespace TaskManagement.Infrastructure.Persistence
         public DbSet<TaskComment> TaskComments => Set<TaskComment>();
         public DbSet<TaskAttachment> TaskAttachments => Set<TaskAttachment>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<DynamicFieldDefinition> DynamicFieldDefinitions => Set<DynamicFieldDefinition>();
+        public DbSet<TaskDynamicFieldValue> TaskDynamicFieldValues => Set<TaskDynamicFieldValue>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

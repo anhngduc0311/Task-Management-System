@@ -37,6 +37,7 @@ namespace TaskManagement.Domain.Entities
         // Navigation Properties
         public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
         public ICollection<TaskAttachment> Attachments { get; set; } = new List<TaskAttachment>();
+        public ICollection<TaskDynamicFieldValue> DynamicFieldValues { get; set; } = new List<TaskDynamicFieldValue>();
 
         // Business Rules
         public void UpdateTitle(string newTitle)

@@ -11,6 +11,7 @@ using TaskManagement.Application.Interfaces;
 using TaskManagement.Domain.Enums;
 using Task = TaskManagement.Domain.Entities.Task;
 using TaskStatus = TaskManagement.Domain.Enums.TaskStatus;
+using TaskManagement.Domain.Entities;
 
 namespace TaskManagement.API.Controllers
 {
@@ -114,6 +115,19 @@ namespace TaskManagement.API.Controllers
                 })
                 .ToListAsync();
 
+            var taskIds = items.Select(t => t.Id).ToList();
+            var allDynamicValues = await _dbContext.TaskDynamicFieldValues
+                .Where(v => taskIds.Contains(v.TaskId))
+                .Include(v => v.DynamicFieldDefinition)
+                .ToListAsync();
+
+            foreach (var item in items)
+            {
+                item.DynamicValues = allDynamicValues
+                    .Where(v => v.TaskId == item.Id)
+                    .ToDictionary(v => v.DynamicFieldDefinition.FieldKey, v => v.FieldValue ?? string.Empty);
+            }
+
             return Ok(new
             {
                 items,
@@ -164,6 +178,36 @@ namespace TaskManagement.API.Controllers
                 }
             }
 
+            // Validate Dynamic Fields
+            var definitions = await _dbContext.DynamicFieldDefinitions
+                .Where(df => df.ProjectId == projectId && df.IsActive)
+                .ToListAsync();
+
+            var errors = new System.Collections.Generic.Dictionary<string, string>();
+            var providedValues = dto.DynamicValues ?? new System.Collections.Generic.Dictionary<string, string>();
+            foreach (var def in definitions)
+            {
+                providedValues.TryGetValue(def.FieldKey, out var val);
+                if (def.IsRequired && string.IsNullOrWhiteSpace(val))
+                {
+                    errors[def.FieldKey] = $"{def.FieldName} is required.";
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(val))
+                {
+                    if (!ValidateValueByType(val, def.FieldType, def.Options, out var valError))
+                    {
+                        errors[def.FieldKey] = valError;
+                    }
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                return BadRequest(new { message = "Validation failed for dynamic fields.", errors });
+            }
+
             var task = new Task
             {
                 ProjectId = projectId,
@@ -181,6 +225,25 @@ namespace TaskManagement.API.Controllers
 
             _dbContext.Tasks.Add(task);
             await _dbContext.SaveChangesAsync();
+
+            // Save Dynamic Field Values
+            if (dto.DynamicValues != null && dto.DynamicValues.Count > 0)
+            {
+                foreach (var kv in dto.DynamicValues)
+                {
+                    var def = definitions.FirstOrDefault(d => d.FieldKey.Equals(kv.Key, StringComparison.OrdinalIgnoreCase));
+                    if (def != null && !string.IsNullOrWhiteSpace(kv.Value))
+                    {
+                        _dbContext.TaskDynamicFieldValues.Add(new TaskDynamicFieldValue
+                        {
+                            TaskId = task.Id,
+                            DynamicFieldId = def.Id,
+                            FieldValue = kv.Value
+                        });
+                    }
+                }
+                await _dbContext.SaveChangesAsync();
+            }
 
             await _auditService.LogAsync(
                 entityType: "Task",
@@ -206,6 +269,11 @@ namespace TaskManagement.API.Controllers
                 parentTaskTitle = await _dbContext.Tasks.Where(t => t.Id == task.ParentTaskId.Value).Select(t => t.Title).FirstOrDefaultAsync();
             }
 
+            var savedValues = await _dbContext.TaskDynamicFieldValues
+                .Where(v => v.TaskId == task.Id)
+                .Include(v => v.DynamicFieldDefinition)
+                .ToDictionaryAsync(v => v.DynamicFieldDefinition.FieldKey, v => v.FieldValue ?? string.Empty);
+
             var resultDto = new TaskDto
             {
                 Id = task.Id,
@@ -223,7 +291,8 @@ namespace TaskManagement.API.Controllers
                 ParentTaskTitle = parentTaskTitle,
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
-                RowVersion = Convert.ToBase64String(task.RowVersion)
+                RowVersion = Convert.ToBase64String(task.RowVersion),
+                DynamicValues = savedValues
             };
 
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, resultDto);
@@ -259,6 +328,11 @@ namespace TaskManagement.API.Controllers
                 })
                 .ToListAsync();
 
+            var taskDynamicValues = await _dbContext.TaskDynamicFieldValues
+                .Where(v => v.TaskId == id)
+                .Include(v => v.DynamicFieldDefinition)
+                .ToDictionaryAsync(v => v.DynamicFieldDefinition.FieldKey, v => v.FieldValue ?? string.Empty);
+
             var dto = new TaskDto
             {
                 Id = task.Id,
@@ -279,7 +353,8 @@ namespace TaskManagement.API.Controllers
                 RowVersion = Convert.ToBase64String(task.RowVersion),
                 SubtasksCount = childTasks.Count,
                 CompletedSubtasksCount = childTasks.Count(c => c.Status == "Done"),
-                ChildTasks = childTasks
+                ChildTasks = childTasks,
+                DynamicValues = taskDynamicValues
             };
 
             return Ok(dto);
@@ -348,6 +423,55 @@ namespace TaskManagement.API.Controllers
                 }
             }
 
+            // Validate Dynamic Fields
+            var definitions = await _dbContext.DynamicFieldDefinitions
+                .Where(df => df.ProjectId == task.ProjectId && df.IsActive)
+                .ToListAsync();
+
+            var existingValues = await _dbContext.TaskDynamicFieldValues
+                .Where(v => v.TaskId == id)
+                .Include(v => v.DynamicFieldDefinition)
+                .ToDictionaryAsync(v => v.DynamicFieldDefinition.FieldKey, v => v.FieldValue ?? string.Empty);
+
+            var mergedValues = new System.Collections.Generic.Dictionary<string, string>(existingValues, StringComparer.OrdinalIgnoreCase);
+            if (dto.DynamicValues != null)
+            {
+                foreach (var kv in dto.DynamicValues)
+                {
+                    mergedValues[kv.Key] = kv.Value;
+                }
+            }
+
+            var errors = new System.Collections.Generic.Dictionary<string, string>();
+            foreach (var def in definitions)
+            {
+                mergedValues.TryGetValue(def.FieldKey, out var val);
+                if (def.IsRequired && string.IsNullOrWhiteSpace(val))
+                {
+                    errors[def.FieldKey] = $"{def.FieldName} is required.";
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(val))
+                {
+                    if (!ValidateValueByType(val, def.FieldType, def.Options, out var valError))
+                    {
+                        errors[def.FieldKey] = valError;
+                    }
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                return BadRequest(new { message = "Validation failed for dynamic fields.", errors });
+            }
+
+            // Serialize old state including old dynamic values
+            var oldDynLog = definitions.ToDictionary(
+                d => d.FieldKey,
+                d => existingValues.TryGetValue(d.FieldKey, out var val) ? val ?? string.Empty : string.Empty
+            );
+
             var oldValue = System.Text.Json.JsonSerializer.Serialize(new
             {
                 task.Title,
@@ -356,7 +480,8 @@ namespace TaskManagement.API.Controllers
                 Priority = task.Priority.ToString(),
                 task.AssigneeId,
                 task.DueDate,
-                task.ParentTaskId
+                task.ParentTaskId,
+                DynamicValues = oldDynLog
             });
 
             try
@@ -377,6 +502,31 @@ namespace TaskManagement.API.Controllers
                 }
 
                 await _dbContext.SaveChangesAsync();
+
+                // Save Dynamic Field Values
+                if (dto.DynamicValues != null)
+                {
+                    var activeDefIds = definitions.Select(d => d.Id).ToList();
+                    var valuesToRemove = await _dbContext.TaskDynamicFieldValues
+                        .Where(v => v.TaskId == id && activeDefIds.Contains(v.DynamicFieldId))
+                        .ToListAsync();
+                    _dbContext.TaskDynamicFieldValues.RemoveRange(valuesToRemove);
+
+                    foreach (var kv in dto.DynamicValues)
+                    {
+                        var def = definitions.FirstOrDefault(d => d.FieldKey.Equals(kv.Key, StringComparison.OrdinalIgnoreCase));
+                        if (def != null && !string.IsNullOrWhiteSpace(kv.Value))
+                        {
+                            _dbContext.TaskDynamicFieldValues.Add(new TaskDynamicFieldValue
+                            {
+                                TaskId = id,
+                                DynamicFieldId = def.Id,
+                                FieldValue = kv.Value
+                            });
+                        }
+                    }
+                    await _dbContext.SaveChangesAsync();
+                }
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -390,6 +540,11 @@ namespace TaskManagement.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+
+            var newDynLog = definitions.ToDictionary(
+                d => d.FieldKey,
+                d => mergedValues.TryGetValue(d.FieldKey, out var val) ? val ?? string.Empty : string.Empty
+            );
 
             await _auditService.LogAsync(
                 entityType: "Task",
@@ -405,7 +560,8 @@ namespace TaskManagement.API.Controllers
                     Priority = task.Priority.ToString(),
                     task.AssigneeId,
                     task.DueDate,
-                    task.ParentTaskId
+                    task.ParentTaskId,
+                    DynamicValues = newDynLog
                 }),
                 ipAddress: ClientIpAddress,
                 userAgent: ClientUserAgent
@@ -435,6 +591,11 @@ namespace TaskManagement.API.Controllers
                 })
                 .ToListAsync();
 
+            var updatedDynamicValues = await _dbContext.TaskDynamicFieldValues
+                .Where(v => v.TaskId == id)
+                .Include(v => v.DynamicFieldDefinition)
+                .ToDictionaryAsync(v => v.DynamicFieldDefinition.FieldKey, v => v.FieldValue ?? string.Empty);
+
             return Ok(new TaskDto
             {
                 Id = task.Id,
@@ -453,7 +614,8 @@ namespace TaskManagement.API.Controllers
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
                 RowVersion = Convert.ToBase64String(task.RowVersion),
-                ChildTasks = childTasksUpdated
+                ChildTasks = childTasksUpdated,
+                DynamicValues = updatedDynamicValues
             });
         }
 
@@ -750,6 +912,85 @@ namespace TaskManagement.API.Controllers
                 .ToListAsync();
 
             return Ok(tasks);
+        }
+        private static bool ValidateValueByType(string value, DynamicFieldType type, System.Collections.Generic.List<string> options, out string error)
+        {
+            error = string.Empty;
+
+            switch (type)
+            {
+                case DynamicFieldType.Number:
+                    if (!double.TryParse(value, out _))
+                    {
+                        error = "Value must be a valid number.";
+                        return false;
+                    }
+                    break;
+
+                case DynamicFieldType.Date:
+                    if (!DateTime.TryParse(value, out _))
+                    {
+                        error = "Value must be a valid date.";
+                        return false;
+                    }
+                    break;
+
+                case DynamicFieldType.Boolean:
+                    var lower = value.ToLower();
+                    if (lower != "true" && lower != "false" && lower != "1" && lower != "0")
+                    {
+                        error = "Value must be a valid boolean (true or false).";
+                        return false;
+                    }
+                    break;
+
+                case DynamicFieldType.Select:
+                    if (!options.Any(opt => opt.Equals(value, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        error = $"Value must be one of the specified options: {string.Join(", ", options)}.";
+                        return false;
+                    }
+                    break;
+
+                case DynamicFieldType.MultiSelect:
+                    try
+                    {
+                        System.Collections.Generic.List<string>? selectedOptions = null;
+                        if (value.TrimStart().StartsWith("["))
+                        {
+                            selectedOptions = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<string>>(value);
+                        }
+                        else
+                        {
+                            selectedOptions = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(s => s.Trim())
+                                .ToList();
+                        }
+
+                        if (selectedOptions == null || selectedOptions.Count == 0)
+                        {
+                            error = "Value must contain at least one option.";
+                            return false;
+                        }
+
+                        foreach (var opt in selectedOptions)
+                        {
+                            if (!options.Any(o => o.Equals(opt, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                error = $"Option '{opt}' is not a valid choice. Allowed options: {string.Join(", ", options)}.";
+                                return false;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        error = "MultiSelect value must be a valid JSON array of options or comma-separated list.";
+                        return false;
+                    }
+                    break;
+            }
+
+            return true;
         }
     }
 }

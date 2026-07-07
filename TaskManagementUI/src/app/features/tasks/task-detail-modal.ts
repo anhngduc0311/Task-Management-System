@@ -11,6 +11,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { Avatar } from '../../shared/components/avatar';
 import { LoadingSpinner } from '../../shared/components/loading-spinner';
 import { SafeHtmlPipe } from '../../shared/pipes/safe-html.pipe';
+import { DynamicFieldService } from '../../core/services/dynamic-field.service';
 
 @Component({
   selector: 'app-task-detail-modal',
@@ -83,6 +84,34 @@ import { SafeHtmlPipe } from '../../shared/pipes/safe-html.pipe';
                         }
                       </div>
                     </div>
+
+                    <!-- Dynamic Field Values -->
+                    @for (field of dynamicFields(); track field.id) {
+                      @if (field.isActive) {
+                        <div class="detail-item">
+                          <span class="detail-label">{{ field.fieldName }}</span>
+                          <span class="detail-value" style="font-weight: 500; color: var(--text-main);">
+                            @if (field.fieldType === 'Boolean') {
+                              <span class="badge" [style.background-color]="task().dynamicValues && task().dynamicValues[field.fieldKey] === 'true' ? '#dcfce7' : '#f1f5f9'" [style.color]="task().dynamicValues && task().dynamicValues[field.fieldKey] === 'true' ? '#15803d' : '#475569'">
+                                {{ task().dynamicValues && task().dynamicValues[field.fieldKey] === 'true' ? 'Yes' : 'No' }}
+                              </span>
+                            } @else if (field.fieldType === 'MultiSelect') {
+                              @if (task().dynamicValues && task().dynamicValues[field.fieldKey]) {
+                                <div class="flex flex-wrap gap-4" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                                  @for (val of parseJsonArray(task().dynamicValues[field.fieldKey]); track val) {
+                                    <span class="badge badge-sm" style="background-color: #e0e7ff; color: #4f46e5; font-size: 0.75rem; padding: 2px 6px;">{{ val }}</span>
+                                  }
+                                </div>
+                              } @else {
+                                <span class="text-muted" style="font-size: 0.85rem;">-</span>
+                              }
+                            } @else {
+                              {{ task().dynamicValues && task().dynamicValues[field.fieldKey] ? task().dynamicValues[field.fieldKey] : '-' }}
+                            }
+                          </span>
+                        </div>
+                      }
+                    }
 
                     @if (task().childTasks && task().childTasks.length > 0) {
                       <div class="detail-item col-span-2 mt-12" style="grid-column: span 2;">
@@ -226,6 +255,138 @@ import { SafeHtmlPipe } from '../../shared/pipes/safe-html.pipe';
                       </select>
                     </div>
                   </div>
+
+                  <!-- Dynamic Fields -->
+                  @for (field of dynamicFields(); track field.id) {
+                    @if (field.isActive) {
+                      <div class="form-group mt-12">
+                        <label class="form-label" for="edit-df-{{field.fieldKey}}">
+                          {{ field.fieldName }}
+                          @if (field.isRequired) {
+                            <span style="color: var(--danger);">*</span>
+                          }
+                        </label>
+
+                        <!-- Text type -->
+                        @if (field.fieldType === 'Text') {
+                          <input
+                            type="text"
+                            id="edit-df-{{field.fieldKey}}"
+                            [name]="'df_' + field.fieldKey"
+                            class="form-input"
+                            [(ngModel)]="editDynamicValues[field.fieldKey]"
+                            [required]="field.isRequired"
+                            #dfRef="ngModel"
+                          />
+                          @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                            <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                          }
+                        }
+
+                        <!-- Number type -->
+                        @else if (field.fieldType === 'Number') {
+                          <input
+                            type="number"
+                            id="edit-df-{{field.fieldKey}}"
+                            [name]="'df_' + field.fieldKey"
+                            class="form-input"
+                            [(ngModel)]="editDynamicValues[field.fieldKey]"
+                            [required]="field.isRequired"
+                            #dfRef="ngModel"
+                          />
+                          @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                            <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                          }
+                        }
+
+                        <!-- Date type -->
+                        @else if (field.fieldType === 'Date') {
+                          <input
+                            type="date"
+                            id="edit-df-{{field.fieldKey}}"
+                            [name]="'df_' + field.fieldKey"
+                            class="form-input"
+                            [(ngModel)]="editDynamicValues[field.fieldKey]"
+                            [required]="field.isRequired"
+                            #dfRef="ngModel"
+                          />
+                          @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                            <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                          }
+                        }
+
+                        <!-- Boolean type -->
+                        @else if (field.fieldType === 'Boolean') {
+                          <div class="flex align-center gap-8 mt-8">
+                            <input
+                              type="checkbox"
+                              id="edit-df-{{field.fieldKey}}"
+                              [name]="'df_' + field.fieldKey"
+                              [(ngModel)]="editDynamicValues[field.fieldKey]"
+                            />
+                            <label for="edit-df-{{field.fieldKey}}" style="font-size: 0.9rem; color: var(--text-main); font-weight: 500;">{{ field.fieldName }}</label>
+                          </div>
+                        }
+
+                        <!-- Select type -->
+                        @else if (field.fieldType === 'Select') {
+                          <select
+                            id="edit-df-{{field.fieldKey}}"
+                            [name]="'df_' + field.fieldKey"
+                            class="form-select"
+                            [(ngModel)]="editDynamicValues[field.fieldKey]"
+                            [required]="field.isRequired"
+                            #dfRef="ngModel"
+                          >
+                            <option value="">-- Select --</option>
+                            @for (opt of field.options; track opt) {
+                              <option [value]="opt">{{ opt }}</option>
+                            }
+                          </select>
+                          @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                            <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                          }
+                        }
+
+                        <!-- MultiSelect type -->
+                        @else if (field.fieldType === 'MultiSelect') {
+                          <div class="custom-multiselect-container">
+                            <div class="multiselect-options flex flex-wrap gap-8 p-8 border rounded-8 bg-white mb-8" style="border: 1px solid var(--border); border-radius: 8px; min-height: 42px; display: flex; align-items: center; padding: 6px 12px; gap: 8px;">
+                              @if (!editDynamicValues[field.fieldKey] || editDynamicValues[field.fieldKey].length === 0) {
+                                <span class="text-muted" style="font-size: 0.85rem;">None selected</span>
+                              } @else {
+                                @for (selected of editDynamicValues[field.fieldKey]; track selected) {
+                                  <span class="badge badge-status-todo flex align-center gap-4 animate-scale-up" style="font-size: 0.75rem; padding: 2px 8px; background-color: #e0e7ff; color: #4f46e5; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                                    {{ selected }}
+                                    <span class="material-symbols-rounded cursor-pointer" style="font-size: 14px; font-weight: bold;" (click)="toggleEditMultiSelectOption(field.fieldKey, selected)">close</span>
+                                  </span>
+                                }
+                              }
+                            </div>
+                            
+                            <select
+                              multiple
+                              id="edit-df-{{field.fieldKey}}"
+                              [name]="'df_' + field.fieldKey"
+                              class="form-select"
+                              style="height: 100px;"
+                              [(ngModel)]="editDynamicValues[field.fieldKey]"
+                              [required]="field.isRequired"
+                              #dfRef="ngModel"
+                              (change)="onEditMultiSelectChange($event, field.fieldKey)"
+                            >
+                              @for (opt of field.options; track opt) {
+                                <option [value]="opt">{{ opt }}</option>
+                              }
+                            </select>
+                          </div>
+                          @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                            <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                          }
+                        }
+                      </div>
+                    }
+                  }
 
                   <div class="edit-actions flex gap-12 mt-16">
                     <button type="button" class="btn btn-outline flex-grow" (click)="cancelEdit()">Cancel</button>
@@ -693,6 +854,7 @@ export class TaskDetailModal implements OnInit, OnDestroy {
   private readonly projectService = inject(ProjectService);
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
+  private readonly dynamicFieldService = inject(DynamicFieldService);
 
   protected task = signal<any | null>(null);
   protected comments = signal<any[]>([]);
@@ -700,6 +862,8 @@ export class TaskDetailModal implements OnInit, OnDestroy {
   protected auditLogs = signal<any[]>([]);
   protected projectMembers = signal<any[]>([]);
   protected projectTasks = signal<any[]>([]);
+  protected dynamicFields = signal<any[]>([]);
+  protected editDynamicValues: Record<string, any> = {};
 
   protected loading = signal(false);
   protected activeSubTab = signal('comments');
@@ -743,6 +907,8 @@ export class TaskDetailModal implements OnInit, OnDestroy {
           dueDate: t.dueDate,
           parentTaskId: t.parentTaskId || null
         };
+
+        this.loadProjectDynamicFields(t.projectId, t.dynamicValues || {});
         
         // Fetch project members list for assignee dropdown in editing
         this.projectService.getMembers(t.projectId).subscribe({
@@ -769,6 +935,57 @@ export class TaskDetailModal implements OnInit, OnDestroy {
         this.onClose();
       }
     });
+  }
+
+  loadProjectDynamicFields(projectId: string, taskDynamicValues: any) {
+    this.dynamicFieldService.getProjectDynamicFields(projectId).subscribe({
+      next: (fields) => {
+        this.dynamicFields.set(fields || []);
+        
+        this.editDynamicValues = {};
+        fields.forEach((f: any) => {
+          const rawVal = taskDynamicValues[f.fieldKey];
+          if (f.fieldType === 'Boolean') {
+            this.editDynamicValues[f.fieldKey] = rawVal === 'true' || rawVal === '1';
+          } else if (f.fieldType === 'MultiSelect') {
+            try {
+              this.editDynamicValues[f.fieldKey] = rawVal ? JSON.parse(rawVal) : [];
+            } catch {
+              this.editDynamicValues[f.fieldKey] = [];
+            }
+          } else {
+            this.editDynamicValues[f.fieldKey] = rawVal || '';
+          }
+        });
+      }
+    });
+  }
+
+  toggleEditMultiSelectOption(fieldKey: string, option: string) {
+    if (!this.editDynamicValues[fieldKey]) {
+      this.editDynamicValues[fieldKey] = [];
+    }
+    const idx = this.editDynamicValues[fieldKey].indexOf(option);
+    if (idx >= 0) {
+      this.editDynamicValues[fieldKey].splice(idx, 1);
+    } else {
+      this.editDynamicValues[fieldKey].push(option);
+    }
+  }
+
+  onEditMultiSelectChange(event: any, fieldKey: string) {
+    const selectedOptions = Array.from(event.target.selectedOptions).map((o: any) => o.value);
+    this.editDynamicValues[fieldKey] = selectedOptions;
+  }
+
+  parseJsonArray(str: string | null | undefined): string[] {
+    if (!str) return [];
+    try {
+      const parsed = JSON.parse(str);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      return [str];
+    }
   }
 
   loadComments() {
@@ -857,12 +1074,47 @@ export class TaskDetailModal implements OnInit, OnDestroy {
       dueDate: t.dueDate,
       parentTaskId: t.parentTaskId || null
     };
+
+    // Revert dynamic values
+    this.editDynamicValues = {};
+    const taskValues = t.dynamicValues || {};
+    this.dynamicFields().forEach(f => {
+      const rawVal = taskValues[f.fieldKey];
+      if (f.fieldType === 'Boolean') {
+        this.editDynamicValues[f.fieldKey] = rawVal === 'true' || rawVal === '1';
+      } else if (f.fieldType === 'MultiSelect') {
+        try {
+          this.editDynamicValues[f.fieldKey] = rawVal ? JSON.parse(rawVal) : [];
+        } catch {
+          this.editDynamicValues[f.fieldKey] = [];
+        }
+      } else {
+        this.editDynamicValues[f.fieldKey] = rawVal || '';
+      }
+    });
   }
 
   onSave(form: any) {
     if (form.invalid) return;
 
     this.saving.set(true);
+
+    const payloadDynamicValues: Record<string, string> = {};
+    this.dynamicFields().forEach(field => {
+      if (field.isActive) {
+        const rawVal = this.editDynamicValues[field.fieldKey];
+        if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+          if (field.fieldType === 'MultiSelect') {
+            payloadDynamicValues[field.fieldKey] = Array.isArray(rawVal) ? JSON.stringify(rawVal) : JSON.stringify([rawVal]);
+          } else if (field.fieldType === 'Boolean') {
+            payloadDynamicValues[field.fieldKey] = rawVal ? 'true' : 'false';
+          } else {
+            payloadDynamicValues[field.fieldKey] = String(rawVal);
+          }
+        }
+      }
+    });
+
     const updatePayload = {
       title: this.editData.title,
       description: this.editData.description,
@@ -871,7 +1123,8 @@ export class TaskDetailModal implements OnInit, OnDestroy {
       assigneeId: this.editData.assigneeId === 'null' || !this.editData.assigneeId ? null : this.editData.assigneeId,
       dueDate: this.editData.dueDate || null,
       parentTaskId: this.editData.parentTaskId === 'null' || !this.editData.parentTaskId ? null : this.editData.parentTaskId,
-      rowVersion: this.task().rowVersion // Send original base64 rowVersion
+      rowVersion: this.task().rowVersion, // Send original base64 rowVersion
+      dynamicValues: payloadDynamicValues
     };
 
     this.taskService.updateTask(this.taskId, updatePayload).subscribe({

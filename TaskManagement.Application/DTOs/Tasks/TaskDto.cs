@@ -23,6 +23,7 @@ namespace TaskManagement.Application.DTOs.Tasks
         public int SubtasksCount { get; set; }
         public int CompletedSubtasksCount { get; set; }
         public System.Collections.Generic.List<SubTaskDto> ChildTasks { get; set; } = new System.Collections.Generic.List<SubTaskDto>();
+        public System.Collections.Generic.Dictionary<string, string> DynamicValues { get; set; } = new System.Collections.Generic.Dictionary<string, string>();
     }
 
     public class SubTaskDto

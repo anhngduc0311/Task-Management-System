@@ -9,6 +9,7 @@ import { AuditLogService } from '../../core/services/audit-log.service';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DynamicFieldService } from '../../core/services/dynamic-field.service';
 import { LoadingSpinner } from '../../shared/components/loading-spinner';
 import { ConfirmDialog } from '../../shared/components/confirm-dialog';
 import { Avatar } from '../../shared/components/avatar';
@@ -74,6 +75,12 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
           <button class="tab-btn" [ngClass]="{ 'active': activeTab() === 'audit' }" (click)="setTab('audit')">
             <span class="material-symbols-rounded">history</span>
             Audit Logs
+          </button>
+        }
+        @if (canManageDynamicFields()) {
+          <button class="tab-btn" [ngClass]="{ 'active': activeTab() === 'dynamic-fields' }" (click)="setTab('dynamic-fields')">
+            <span class="material-symbols-rounded">settings_applications</span>
+            Dynamic Fields
           </button>
         }
       </div>
@@ -507,6 +514,104 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
             }
           </div>
         }
+
+        <!-- 5. DYNAMIC FIELDS TAB -->
+        @if (activeTab() === 'dynamic-fields' && canManageDynamicFields()) {
+          <div class="dynamic-fields-tab">
+            <div class="glass-card mb-24 flex justify-between align-center flex-wrap gap-16">
+              <div>
+                <h3>Dynamic Fields Definition</h3>
+                <p class="text-muted" style="margin: 4px 0 0 0; font-size: 0.85rem;">Define custom fields for tasks in this project.</p>
+              </div>
+              <button class="btn btn-primary" (click)="openAddDynamicFieldModal()">
+                <span class="material-symbols-rounded">add</span>
+                Add Dynamic Field
+              </button>
+            </div>
+
+            <div class="glass-card p-0">
+              <div class="responsive-table-container">
+                <table class="responsive-table">
+                  <thead>
+                    <tr>
+                      <th>Field Name</th>
+                      <th>Field Key</th>
+                      <th>Type</th>
+                      <th>Required</th>
+                      <th>Options</th>
+                      <th>Default Value</th>
+                      <th>Display Order</th>
+                      <th>Status</th>
+                      <th class="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @if (dynamicFields().length === 0) {
+                      <tr>
+                        <td colspan="9" class="text-center py-24 text-muted">
+                          No dynamic fields defined yet.
+                        </td>
+                      </tr>
+                    } @else {
+                      @for (field of dynamicFields(); track field.id) {
+                        <tr>
+                          <td><strong>{{ field.fieldName }}</strong></td>
+                          <td><code>{{ field.fieldKey }}</code></td>
+                          <td>
+                            <span class="badge badge-status-todo" style="background-color: #f1f5f9; color: #334155;">
+                              {{ field.fieldType }}
+                            </span>
+                          </td>
+                          <td>
+                            @if (field.isRequired) {
+                              <span class="badge" style="background-color: #fee2e2; color: #ef4444;">Required</span>
+                            } @else {
+                              <span class="text-muted" style="font-size: 0.85rem;">Optional</span>
+                            }
+                          </td>
+                          <td>
+                            @if (field.options && field.options.length > 0) {
+                              <div class="flex flex-wrap gap-4" style="max-width: 200px;">
+                                @for (opt of field.options; track opt) {
+                                  <span class="badge" style="background-color: #f1f5f9; color: #475569; font-size: 0.7rem; padding: 2px 6px;">{{ opt }}</span>
+                                }
+                              </div>
+                            } @else {
+                              <span class="text-muted">-</span>
+                            }
+                          </td>
+                          <td>
+                            @if (field.defaultValue) {
+                              <code style="font-size: 0.8rem;">{{ field.defaultValue }}</code>
+                            } @else {
+                              <span class="text-muted">-</span>
+                            }
+                          </td>
+                          <td>{{ field.displayOrder }}</td>
+                          <td>
+                            @if (field.isActive) {
+                              <span class="badge badge-status-active" style="background-color: #dcfce7; color: #15803d;">Active</span>
+                            } @else {
+                              <span class="badge" style="background-color: #f1f5f9; color: #94a3b8;">Inactive</span>
+                            }
+                          </td>
+                          <td class="text-right">
+                            <button class="btn btn-text text-muted" (click)="openEditDynamicFieldModal(field)" title="Edit Field" style="padding: 4px; min-width: auto; margin-right: 8px;">
+                              <span class="material-symbols-rounded" style="font-size: 18px;">edit</span>
+                            </button>
+                            <button class="btn btn-text text-danger" (click)="deleteDynamicField(field.id)" title="Delete Field" style="padding: 4px; min-width: auto;">
+                              <span class="material-symbols-rounded" style="font-size: 18px;">delete</span>
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        }
       </div>
 
       <!-- Task Detail Modal Drawer -->
@@ -652,6 +757,138 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                     }
                   </select>
                 </div>
+
+                <!-- Dynamic Fields -->
+                @for (field of dynamicFields(); track field.id) {
+                  @if (field.isActive) {
+                    <div class="form-group">
+                      <label class="form-label" for="create-df-{{field.fieldKey}}">
+                        {{ field.fieldName }}
+                        @if (field.isRequired) {
+                          <span style="color: var(--danger);">*</span>
+                        }
+                      </label>
+
+                      <!-- Text type -->
+                      @if (field.fieldType === 'Text') {
+                        <input
+                          type="text"
+                          id="create-df-{{field.fieldKey}}"
+                          [name]="'df_' + field.fieldKey"
+                          class="form-input"
+                          [(ngModel)]="newTaskDynamicValues[field.fieldKey]"
+                          [required]="field.isRequired"
+                          #dfRef="ngModel"
+                        />
+                        @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                          <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                        }
+                      }
+
+                      <!-- Number type -->
+                      @else if (field.fieldType === 'Number') {
+                        <input
+                          type="number"
+                          id="create-df-{{field.fieldKey}}"
+                          [name]="'df_' + field.fieldKey"
+                          class="form-input"
+                          [(ngModel)]="newTaskDynamicValues[field.fieldKey]"
+                          [required]="field.isRequired"
+                          #dfRef="ngModel"
+                        />
+                        @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                          <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                        }
+                      }
+
+                      <!-- Date type -->
+                      @else if (field.fieldType === 'Date') {
+                        <input
+                          type="date"
+                          id="create-df-{{field.fieldKey}}"
+                          [name]="'df_' + field.fieldKey"
+                          class="form-input"
+                          [(ngModel)]="newTaskDynamicValues[field.fieldKey]"
+                          [required]="field.isRequired"
+                          #dfRef="ngModel"
+                        />
+                        @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                          <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                        }
+                      }
+
+                      <!-- Boolean type -->
+                      @else if (field.fieldType === 'Boolean') {
+                        <div class="flex align-center gap-8 mt-8">
+                          <input
+                            type="checkbox"
+                            id="create-df-{{field.fieldKey}}"
+                            [name]="'df_' + field.fieldKey"
+                            [(ngModel)]="newTaskDynamicValues[field.fieldKey]"
+                          />
+                          <label for="create-df-{{field.fieldKey}}" style="font-size: 0.9rem; color: var(--text-main); font-weight: 500;">{{ field.fieldName }}</label>
+                        </div>
+                      }
+
+                      <!-- Select type -->
+                      @else if (field.fieldType === 'Select') {
+                        <select
+                          id="create-df-{{field.fieldKey}}"
+                          [name]="'df_' + field.fieldKey"
+                          class="form-select"
+                          [(ngModel)]="newTaskDynamicValues[field.fieldKey]"
+                          [required]="field.isRequired"
+                          #dfRef="ngModel"
+                        >
+                          <option value="">-- Select --</option>
+                          @for (opt of field.options; track opt) {
+                            <option [value]="opt">{{ opt }}</option>
+                          }
+                        </select>
+                        @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                          <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                        }
+                      }
+
+                      <!-- MultiSelect type -->
+                      @else if (field.fieldType === 'MultiSelect') {
+                        <div class="custom-multiselect-container">
+                          <div class="multiselect-options flex flex-wrap gap-8 p-8 border rounded-8 bg-white mb-8" style="border: 1px solid var(--border); border-radius: 8px; min-height: 42px; display: flex; align-items: center; padding: 6px 12px; gap: 8px;">
+                            @if (!newTaskDynamicValues[field.fieldKey] || newTaskDynamicValues[field.fieldKey].length === 0) {
+                              <span class="text-muted" style="font-size: 0.85rem;">None selected</span>
+                            } @else {
+                              @for (selected of newTaskDynamicValues[field.fieldKey]; track selected) {
+                                <span class="badge badge-status-todo flex align-center gap-4 animate-scale-up" style="font-size: 0.75rem; padding: 2px 8px; background-color: #e0e7ff; color: #4f46e5; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                                  {{ selected }}
+                                  <span class="material-symbols-rounded cursor-pointer" style="font-size: 14px; font-weight: bold;" (click)="toggleMultiSelectOption(field.fieldKey, selected)">close</span>
+                                </span>
+                              }
+                            }
+                          </div>
+                          
+                          <select
+                            multiple
+                            id="create-df-{{field.fieldKey}}"
+                            [name]="'df_' + field.fieldKey"
+                            class="form-select"
+                            style="height: 100px;"
+                            [(ngModel)]="newTaskDynamicValues[field.fieldKey]"
+                            [required]="field.isRequired"
+                            #dfRef="ngModel"
+                            (change)="onMultiSelectChange($event, field.fieldKey)"
+                          >
+                            @for (opt of field.options; track opt) {
+                              <option [value]="opt">{{ opt }}</option>
+                            }
+                          </select>
+                        </div>
+                        @if (dfRef.invalid && (dfRef.dirty || dfRef.touched)) {
+                          <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">{{ field.fieldName }} is required.</span>
+                        }
+                      }
+                    </div>
+                  }
+                }
               </div>
               
               <div class="modal-footer">
@@ -707,6 +944,132 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                 <button type="button" class="btn btn-outline" (click)="closeAddMemberModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary" [disabled]="memberForm.invalid || addingMember()">
                   {{ addingMember() ? 'Adding...' : 'Add Member' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Create/Edit Dynamic Field Modal -->
+      @if (showDynamicFieldModal()) {
+        <div class="modal-overlay" (click)="closeDynamicFieldModal()">
+          <div class="modal-container animate-scale-up" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>{{ editingField() ? 'Edit Dynamic Field' : 'Add Dynamic Field' }}</h3>
+              <button class="close-btn" (click)="closeDynamicFieldModal()">&times;</button>
+            </div>
+            
+            <form #dfForm="ngForm" (ngSubmit)="saveDynamicField(dfForm)">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label class="form-label" for="df-name">Field Name</label>
+                  <input 
+                    type="text" 
+                    id="df-name" 
+                    name="fieldName" 
+                    class="form-input" 
+                    [(ngModel)]="dynamicFieldData.fieldName" 
+                    required 
+                    maxlength="100"
+                    placeholder="e.g. Release Version"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="df-key">Field Key</label>
+                  <input 
+                    type="text" 
+                    id="df-key" 
+                    name="fieldKey" 
+                    class="form-input" 
+                    [(ngModel)]="dynamicFieldData.fieldKey" 
+                    required 
+                    pattern="^[a-zA-Z][a-zA-Z0-9_]*$"
+                    [disabled]="editingField() !== null"
+                    placeholder="e.g. releaseVersion"
+                    #keyInput="ngModel"
+                  />
+                  @if (keyInput.invalid && (keyInput.dirty || keyInput.touched)) {
+                    <span class="error-text" style="color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: block;">
+                      Must start with a letter and contain only letters, numbers, and underscores.
+                    </span>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="df-type">Field Type</label>
+                  <select 
+                    id="df-type" 
+                    name="fieldType" 
+                    class="form-select" 
+                    [(ngModel)]="dynamicFieldData.fieldType"
+                    [disabled]="editingField() !== null"
+                  >
+                    <option value="Text">Text</option>
+                    <option value="Number">Number</option>
+                    <option value="Date">Date</option>
+                    <option value="Boolean">Boolean</option>
+                    <option value="Select">Select</option>
+                    <option value="MultiSelect">MultiSelect</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <div class="flex align-center gap-8 mt-8">
+                    <input 
+                      type="checkbox" 
+                      id="df-required" 
+                      name="isRequired" 
+                      [(ngModel)]="dynamicFieldData.isRequired"
+                    />
+                    <label for="df-required" style="font-size: 0.9rem; font-weight: 500;">Required (Mandatory)</label>
+                  </div>
+                </div>
+
+                @if (dynamicFieldData.fieldType === 'Select' || dynamicFieldData.fieldType === 'MultiSelect') {
+                  <div class="form-group">
+                    <label class="form-label" for="df-options">Options (comma or newline separated)</label>
+                    <textarea 
+                      id="df-options" 
+                      name="optionsRaw" 
+                      class="form-input form-textarea" 
+                      [(ngModel)]="dynamicFieldData.optionsRaw" 
+                      required
+                      placeholder="Option 1, Option 2, Option 3"
+                    ></textarea>
+                  </div>
+                }
+
+                <div class="form-group">
+                  <label class="form-label" for="df-default">Default Value (Optional)</label>
+                  <input 
+                    type="text" 
+                    id="df-default" 
+                    name="defaultValue" 
+                    class="form-input" 
+                    [(ngModel)]="dynamicFieldData.defaultValue" 
+                    placeholder="e.g. v1.0 or true or 123"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="df-order">Display Order</label>
+                  <input 
+                    type="number" 
+                    id="df-order" 
+                    name="displayOrder" 
+                    class="form-input" 
+                    [(ngModel)]="dynamicFieldData.displayOrder" 
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline" (click)="closeDynamicFieldModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" [disabled]="dfForm.invalid || savingField()">
+                  {{ savingField() ? 'Saving...' : 'Save Field' }}
                 </button>
               </div>
             </form>
@@ -1023,11 +1386,31 @@ export class ProjectDetail implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly dynamicFieldService = inject(DynamicFieldService);
 
   protected project = signal<any | null>(null);
   protected members = signal<any[]>([]);
   protected tasks = signal<any[]>([]);
   protected auditLogs = signal<any[]>([]);
+  protected dynamicFields = signal<any[]>([]);
+
+  // Dynamic Fields management modal state
+  protected showDynamicFieldModal = signal(false);
+  protected editingField = signal<any | null>(null);
+  protected dynamicFieldData = {
+    fieldName: '',
+    fieldKey: '',
+    fieldType: 'Text',
+    isRequired: false,
+    optionsRaw: '',
+    defaultValue: '',
+    displayOrder: 0,
+    isActive: true
+  };
+  protected savingField = signal(false);
+
+  // New task dynamic values state
+  protected newTaskDynamicValues: Record<string, any> = {};
   
   protected loading = signal(false);
   protected activeTab = signal('tasks');
@@ -1111,6 +1494,7 @@ export class ProjectDetail implements OnInit {
         this.project.set(project);
         this.members.set(members || []);
         this.loadTasks();
+        this.loadProjectDynamicFields();
         if (this.canViewAuditLogs()) {
           this.loadAuditLogs();
         }
@@ -1174,9 +1558,153 @@ export class ProjectDetail implements OnInit {
       this.loadAuditLogs();
     } else if (tab === 'members') {
       this.loadMembers();
+    } else if (tab === 'dynamic-fields') {
+      this.loadProjectDynamicFields();
     } else {
       this.loadTasks();
     }
+  }
+
+  loadProjectDynamicFields() {
+    this.dynamicFieldService.getProjectDynamicFields(this.projectId).subscribe({
+      next: (fields) => {
+        this.dynamicFields.set(fields || []);
+      },
+      error: () => {
+        this.toastService.error('Failed to load project dynamic fields.');
+      }
+    });
+  }
+
+  canManageDynamicFields(): boolean {
+    const user = this.authService.currentUser();
+    if (!user || !this.project()) return false;
+    if (user.roles?.includes('Admin')) return true;
+    
+    const selfMember = this.members().find(m => m.userId === user.id);
+    return selfMember?.roleInProject === 'ProjectManager';
+  }
+
+  openAddDynamicFieldModal() {
+    this.editingField.set(null);
+    this.dynamicFieldData = {
+      fieldName: '',
+      fieldKey: '',
+      fieldType: 'Text',
+      isRequired: false,
+      optionsRaw: '',
+      defaultValue: '',
+      displayOrder: this.dynamicFields().length + 1,
+      isActive: true
+    };
+    this.showDynamicFieldModal.set(true);
+  }
+
+  openEditDynamicFieldModal(field: any) {
+    this.editingField.set(field);
+    this.dynamicFieldData = {
+      fieldName: field.fieldName,
+      fieldKey: field.fieldKey,
+      fieldType: field.fieldType,
+      isRequired: field.isRequired,
+      optionsRaw: field.options ? field.options.join(', ') : '',
+      defaultValue: field.defaultValue || '',
+      displayOrder: field.displayOrder,
+      isActive: field.isActive
+    };
+    this.showDynamicFieldModal.set(true);
+  }
+
+  closeDynamicFieldModal() {
+    this.showDynamicFieldModal.set(false);
+    this.editingField.set(null);
+  }
+
+  saveDynamicField(form: any) {
+    if (form.invalid) return;
+    this.savingField.set(true);
+
+    let options: string[] | null = null;
+    if (this.dynamicFieldData.fieldType === 'Select' || this.dynamicFieldData.fieldType === 'MultiSelect') {
+      options = this.dynamicFieldData.optionsRaw
+        .split(/[,\n]/)
+        .map(o => o.trim())
+        .filter(o => o.length > 0);
+    }
+
+    const payload = {
+      fieldName: this.dynamicFieldData.fieldName,
+      fieldKey: this.dynamicFieldData.fieldKey,
+      fieldType: this.dynamicFieldData.fieldType,
+      isRequired: this.dynamicFieldData.isRequired,
+      options: options,
+      defaultValue: this.dynamicFieldData.defaultValue || null,
+      displayOrder: this.dynamicFieldData.displayOrder,
+      isActive: this.dynamicFieldData.isActive
+    };
+
+    const editField = this.editingField();
+    if (editField) {
+      this.dynamicFieldService.updateDynamicField(editField.id, payload).subscribe({
+        next: () => {
+          this.savingField.set(false);
+          this.showDynamicFieldModal.set(false);
+          this.toastService.success('Dynamic field updated.');
+          this.loadProjectDynamicFields();
+          this.loadAuditLogs();
+        },
+        error: (err) => {
+          this.savingField.set(false);
+          this.toastService.error(err.error?.message || 'Failed to update dynamic field.');
+        }
+      });
+    } else {
+      this.dynamicFieldService.createDynamicField(this.projectId, payload).subscribe({
+        next: () => {
+          this.savingField.set(false);
+          this.showDynamicFieldModal.set(false);
+          this.toastService.success('Dynamic field created.');
+          this.loadProjectDynamicFields();
+          this.loadAuditLogs();
+        },
+        error: (err) => {
+          this.savingField.set(false);
+          this.toastService.error(err.error?.message || 'Failed to create dynamic field.');
+        }
+      });
+    }
+  }
+
+  deleteDynamicField(fieldId: string) {
+    if (confirm('Are you sure you want to delete this dynamic field? This will delete all its values associated with tasks!')) {
+      this.dynamicFieldService.deleteDynamicField(fieldId).subscribe({
+        next: () => {
+          this.toastService.success('Dynamic field deleted.');
+          this.loadProjectDynamicFields();
+          this.loadAuditLogs();
+        },
+        error: (err) => {
+          this.toastService.error(err.error?.message || 'Failed to delete dynamic field.');
+        }
+      });
+    }
+  }
+
+  toggleMultiSelectOption(fieldKey: string, option: string) {
+    if (!this.newTaskDynamicValues[fieldKey]) {
+      this.newTaskDynamicValues[fieldKey] = [];
+    }
+    const idx = this.newTaskDynamicValues[fieldKey].indexOf(option);
+    if (idx >= 0) {
+      this.newTaskDynamicValues[fieldKey].splice(idx, 1);
+    } else {
+      this.newTaskDynamicValues[fieldKey].push(option);
+    }
+  }
+
+  onMultiSelectChange(event: any, fieldKey: string) {
+    const selectedOptions = Array.from(event.target.selectedOptions).map((o: any) => o.value);
+    this.newTaskDynamicValues[fieldKey] = selectedOptions;
   }
 
   // Permission Checks
@@ -1297,6 +1825,22 @@ export class ProjectDetail implements OnInit {
 
   openCreateTaskModal() {
     this.newTaskData = { title: '', description: '', priority: 'Medium', assigneeId: null, dueDate: null, parentTaskId: null };
+    this.newTaskDynamicValues = {};
+    this.dynamicFields().forEach(f => {
+      if (f.isActive) {
+        if (f.fieldType === 'Boolean') {
+          this.newTaskDynamicValues[f.fieldKey] = f.defaultValue === 'true' || f.defaultValue === '1';
+        } else if (f.fieldType === 'MultiSelect') {
+          try {
+            this.newTaskDynamicValues[f.fieldKey] = f.defaultValue ? JSON.parse(f.defaultValue) : [];
+          } catch {
+            this.newTaskDynamicValues[f.fieldKey] = [];
+          }
+        } else {
+          this.newTaskDynamicValues[f.fieldKey] = f.defaultValue || '';
+        }
+      }
+    });
     this.showCreateTaskModal.set(true);
   }
 
@@ -1307,7 +1851,29 @@ export class ProjectDetail implements OnInit {
   onCreateTaskSubmit(form: any) {
     if (form.invalid) return;
     this.creatingTask.set(true);
-    this.taskService.createTask(this.projectId, this.newTaskData).subscribe({
+
+    const payloadDynamicValues: Record<string, string> = {};
+    this.dynamicFields().forEach(field => {
+      if (field.isActive) {
+        const rawVal = this.newTaskDynamicValues[field.fieldKey];
+        if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+          if (field.fieldType === 'MultiSelect') {
+            payloadDynamicValues[field.fieldKey] = Array.isArray(rawVal) ? JSON.stringify(rawVal) : JSON.stringify([rawVal]);
+          } else if (field.fieldType === 'Boolean') {
+            payloadDynamicValues[field.fieldKey] = rawVal ? 'true' : 'false';
+          } else {
+            payloadDynamicValues[field.fieldKey] = String(rawVal);
+          }
+        }
+      }
+    });
+
+    const requestData = {
+      ...this.newTaskData,
+      dynamicValues: payloadDynamicValues
+    };
+
+    this.taskService.createTask(this.projectId, requestData).subscribe({
       next: () => {
         this.creatingTask.set(false);
         this.showCreateTaskModal.set(false);

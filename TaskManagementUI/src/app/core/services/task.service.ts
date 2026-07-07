@@ -22,7 +22,7 @@ export class TaskService {
     return this.http.get<any>(`${this.baseUrl}/projects/${projectId}/tasks`, { params });
   }
 
-  createTask(projectId: string, data: { title: string; description?: string | null; priority: string; assigneeId?: string | null; dueDate?: string | null }): Observable<any> {
+  createTask(projectId: string, data: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/projects/${projectId}/tasks`, data);
   }
 
@@ -30,7 +30,7 @@ export class TaskService {
     return this.http.get<any>(`${this.baseUrl}/tasks/${id}`);
   }
 
-  updateTask(id: string, data: { title: string; description?: string | null; status: string; priority: string; assigneeId?: string | null; dueDate?: string | null; rowVersion: string }): Observable<any> {
+  updateTask(id: string, data: any): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/tasks/${id}`, data);
   }
 

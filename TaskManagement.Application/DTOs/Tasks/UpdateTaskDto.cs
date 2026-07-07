@@ -28,5 +28,7 @@ namespace TaskManagement.Application.DTOs.Tasks
         
         [Required]
         public string RowVersion { get; set; } = string.Empty; // Base64 string
+
+        public System.Collections.Generic.Dictionary<string, string>? DynamicValues { get; set; }
     }
 }

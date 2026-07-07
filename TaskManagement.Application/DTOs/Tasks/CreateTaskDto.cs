@@ -21,5 +21,7 @@ namespace TaskManagement.Application.DTOs.Tasks
         public DateTime? DueDate { get; set; }
 
         public Guid? ParentTaskId { get; set; }
+
+        public System.Collections.Generic.Dictionary<string, string>? DynamicValues { get; set; }
     }
 }
