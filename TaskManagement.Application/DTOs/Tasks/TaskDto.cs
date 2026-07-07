@@ -15,8 +15,18 @@ namespace TaskManagement.Application.DTOs.Tasks
         public Guid CreatedById { get; set; }
         public string CreatedByName { get; set; } = string.Empty;
         public DateTime? DueDate { get; set; }
+        public Guid? ParentTaskId { get; set; }
+        public string? ParentTaskTitle { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string RowVersion { get; set; } = string.Empty; // Base64 string
+        public System.Collections.Generic.List<SubTaskDto> ChildTasks { get; set; } = new System.Collections.Generic.List<SubTaskDto>();
+    }
+
+    public class SubTaskDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
     }
 }

@@ -104,6 +104,8 @@ namespace TaskManagement.API.Controllers
                     CreatedById = t.CreatedById,
                     CreatedByName = t.CreatedBy.FullName,
                     DueDate = t.DueDate,
+                    ParentTaskId = t.ParentTaskId,
+                    ParentTaskTitle = t.ParentTask != null ? t.ParentTask.Title : null,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
                     RowVersion = Convert.ToBase64String(t.RowVersion)
@@ -151,6 +153,15 @@ namespace TaskManagement.API.Controllers
                 }
             }
 
+            if (dto.ParentTaskId.HasValue)
+            {
+                var parentTask = await _dbContext.Tasks.FindAsync(dto.ParentTaskId.Value);
+                if (parentTask == null || parentTask.ProjectId != projectId)
+                {
+                    return BadRequest(new { message = "Parent task must exist and belong to the same project." });
+                }
+            }
+
             var task = new Task
             {
                 ProjectId = projectId,
@@ -161,6 +172,7 @@ namespace TaskManagement.API.Controllers
                 AssigneeId = dto.AssigneeId,
                 CreatedById = CurrentUserId,
                 DueDate = dto.DueDate,
+                ParentTaskId = dto.ParentTaskId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -186,6 +198,12 @@ namespace TaskManagement.API.Controllers
                 assigneeName = await _dbContext.Users.Where(u => u.Id == task.AssigneeId.Value).Select(u => u.FullName).FirstOrDefaultAsync();
             }
 
+            string? parentTaskTitle = null;
+            if (task.ParentTaskId.HasValue)
+            {
+                parentTaskTitle = await _dbContext.Tasks.Where(t => t.Id == task.ParentTaskId.Value).Select(t => t.Title).FirstOrDefaultAsync();
+            }
+
             var resultDto = new TaskDto
             {
                 Id = task.Id,
@@ -199,6 +217,8 @@ namespace TaskManagement.API.Controllers
                 CreatedById = task.CreatedById,
                 CreatedByName = creatorName,
                 DueDate = task.DueDate,
+                ParentTaskId = task.ParentTaskId,
+                ParentTaskTitle = parentTaskTitle,
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
                 RowVersion = Convert.ToBase64String(task.RowVersion)
@@ -219,12 +239,23 @@ namespace TaskManagement.API.Controllers
             var task = await _dbContext.Tasks
                 .Include(t => t.Assignee)
                 .Include(t => t.CreatedBy)
+                .Include(t => t.ParentTask)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
             {
                 return NotFound(new { message = "Task not found." });
             }
+
+            var childTasks = await _dbContext.Tasks
+                .Where(t => t.ParentTaskId == id && !t.IsDeleted)
+                .Select(t => new SubTaskDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status.ToString()
+                })
+                .ToListAsync();
 
             var dto = new TaskDto
             {
@@ -239,9 +270,12 @@ namespace TaskManagement.API.Controllers
                 CreatedById = task.CreatedById,
                 CreatedByName = task.CreatedBy.FullName,
                 DueDate = task.DueDate,
+                ParentTaskId = task.ParentTaskId,
+                ParentTaskTitle = task.ParentTask != null ? task.ParentTask.Title : null,
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
-                RowVersion = Convert.ToBase64String(task.RowVersion)
+                RowVersion = Convert.ToBase64String(task.RowVersion),
+                ChildTasks = childTasks
             };
 
             return Ok(dto);
@@ -274,6 +308,32 @@ namespace TaskManagement.API.Controllers
                 return BadRequest(new { message = "Invalid priority level." });
             }
 
+            if (dto.ParentTaskId.HasValue)
+            {
+                if (dto.ParentTaskId.Value == id)
+                {
+                    return BadRequest(new { message = "A task cannot be its own parent." });
+                }
+
+                var parentTask = await _dbContext.Tasks.FindAsync(dto.ParentTaskId.Value);
+                if (parentTask == null || parentTask.ProjectId != task.ProjectId)
+                {
+                    return BadRequest(new { message = "Parent task must exist and belong to the same project." });
+                }
+
+                // Check for circular dependency
+                var currentAncestorId = parentTask.ParentTaskId;
+                while (currentAncestorId.HasValue)
+                {
+                    if (currentAncestorId.Value == id)
+                    {
+                        return BadRequest(new { message = "Setting this parent task would create a circular dependency." });
+                    }
+                    var nextAncestor = await _dbContext.Tasks.FindAsync(currentAncestorId.Value);
+                    currentAncestorId = nextAncestor?.ParentTaskId;
+                }
+            }
+
             if (dto.AssigneeId.HasValue)
             {
                 var isMember = await _dbContext.ProjectMembers
@@ -291,7 +351,8 @@ namespace TaskManagement.API.Controllers
                 Status = task.Status.ToString(),
                 Priority = task.Priority.ToString(),
                 task.AssigneeId,
-                task.DueDate
+                task.DueDate,
+                task.ParentTaskId
             });
 
             try
@@ -303,6 +364,7 @@ namespace TaskManagement.API.Controllers
                 task.Priority = priority;
                 task.AssigneeId = dto.AssigneeId;
                 task.DueDate = dto.DueDate;
+                task.ParentTaskId = dto.ParentTaskId;
                 task.UpdatedAt = DateTime.UtcNow;
 
                 if (_dbContext is DbContext efDbContext)
@@ -338,7 +400,8 @@ namespace TaskManagement.API.Controllers
                     Status = task.Status.ToString(),
                     Priority = task.Priority.ToString(),
                     task.AssigneeId,
-                    task.DueDate
+                    task.DueDate,
+                    task.ParentTaskId
                 }),
                 ipAddress: ClientIpAddress,
                 userAgent: ClientUserAgent
@@ -351,6 +414,22 @@ namespace TaskManagement.API.Controllers
             {
                 assigneeName = await _dbContext.Users.Where(u => u.Id == task.AssigneeId.Value).Select(u => u.FullName).FirstOrDefaultAsync();
             }
+
+            string? parentTaskTitleUpdated = null;
+            if (task.ParentTaskId.HasValue)
+            {
+                parentTaskTitleUpdated = await _dbContext.Tasks.Where(t => t.Id == task.ParentTaskId.Value).Select(t => t.Title).FirstOrDefaultAsync();
+            }
+
+            var childTasksUpdated = await _dbContext.Tasks
+                .Where(t => t.ParentTaskId == id && !t.IsDeleted)
+                .Select(t => new SubTaskDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status.ToString()
+                })
+                .ToListAsync();
 
             return Ok(new TaskDto
             {
@@ -365,9 +444,12 @@ namespace TaskManagement.API.Controllers
                 CreatedById = task.CreatedById,
                 CreatedByName = creatorName,
                 DueDate = task.DueDate,
+                ParentTaskId = task.ParentTaskId,
+                ParentTaskTitle = parentTaskTitleUpdated,
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
-                RowVersion = Convert.ToBase64String(task.RowVersion)
+                RowVersion = Convert.ToBase64String(task.RowVersion),
+                ChildTasks = childTasksUpdated
             });
         }
 

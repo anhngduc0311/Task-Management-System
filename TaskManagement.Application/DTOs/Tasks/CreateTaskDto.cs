@@ -19,5 +19,7 @@ namespace TaskManagement.Application.DTOs.Tasks
         public Guid? AssigneeId { get; set; }
 
         public DateTime? DueDate { get; set; }
+
+        public Guid? ParentTaskId { get; set; }
     }
 }

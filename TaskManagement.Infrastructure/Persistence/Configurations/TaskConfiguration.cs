@@ -64,6 +64,11 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 .HasForeignKey(t => t.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(t => t.ParentTask)
+                .WithMany(t => t.ChildTasks)
+                .HasForeignKey(t => t.ParentTaskId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Soft delete global query filter
             builder.HasQueryFilter(t => !t.IsDeleted);
 

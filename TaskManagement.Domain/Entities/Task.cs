@@ -30,6 +30,10 @@ namespace TaskManagement.Domain.Entities
         // Concurrency token
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
+        public Guid? ParentTaskId { get; set; }
+        public Task? ParentTask { get; set; }
+        public ICollection<Task> ChildTasks { get; set; } = new List<Task>();
+
         // Navigation Properties
         public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
         public ICollection<TaskAttachment> Attachments { get; set; } = new List<TaskAttachment>();

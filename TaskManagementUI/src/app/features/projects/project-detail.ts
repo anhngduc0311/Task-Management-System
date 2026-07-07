@@ -12,7 +12,6 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
 import { ConfirmDialog } from '../../shared/components/confirm-dialog';
 import { Avatar } from '../../shared/components/avatar';
 import { TaskDetailModal } from '../tasks/task-detail-modal';
-
 @Component({
   selector: 'app-project-detail',
   standalone: true,
@@ -106,52 +105,161 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                 </select>
               </div>
               
-              @if (canCreateTask()) {
-                <button class="btn btn-primary" (click)="openCreateTaskModal()">
-                  <span class="material-symbols-rounded">add</span>
-                  Create Task
-                </button>
-              }
+              <div class="flex align-center gap-12 flex-wrap">
+                <!-- View Mode Toggle -->
+                <div class="toggle-group flex p-4 rounded-8" style="background-color: #f1f5f9; gap: 4px;">
+                  <button 
+                    type="button"
+                    class="btn btn-sm btn-text flex align-center gap-4" 
+                    [ngClass]="{ 'active-toggle': viewMode() === 'kanban' }"
+                    (click)="viewMode.set('kanban')"
+                    style="padding: 6px 12px; font-size: 0.85rem;"
+                  >
+                    <span class="material-symbols-rounded" style="font-size: 16px;">dashboard</span>
+                    Board
+                  </button>
+                  <button 
+                    type="button"
+                    class="btn btn-sm btn-text flex align-center gap-4" 
+                    [ngClass]="{ 'active-toggle': viewMode() === 'table' }"
+                    (click)="viewMode.set('table')"
+                    style="padding: 6px 12px; font-size: 0.85rem;"
+                  >
+                    <span class="material-symbols-rounded" style="font-size: 16px;">format_list_bulleted</span>
+                    List
+                  </button>
+                </div>
+
+                @if (canCreateTask()) {
+                  <button class="btn btn-primary" (click)="openCreateTaskModal()">
+                    <span class="material-symbols-rounded">add</span>
+                    Create Task
+                  </button>
+                }
+              </div>
             </div>
 
             <!-- Kanban Board -->
-            <div class="kanban-board">
-              @for (col of kanbanColumns; track col.status) {
-                <div class="kanban-col">
-                  <div class="kanban-col-header">
-                    <h4>{{ col.name }}</h4>
-                    <span class="task-count">{{ getTaskCountInCol(col.status) }}</span>
-                  </div>
-                  
-                  <div class="kanban-col-cards">
-                    @for (task of getTasksByStatus(col.status); track task.id) {
-                      <div class="kanban-card" (click)="openTaskDetails(task.id)">
-                        <div class="card-header flex justify-between align-center mb-8">
-                          <span class="badge" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">
-                            {{ task.priority }}
-                          </span>
-                        </div>
-                        <h5 class="task-title mb-8">{{ task.title }}</h5>
-                        @if (task.description) {
-                          <p class="task-desc">{{ task.description }}</p>
-                        }
-                        <div class="card-footer mt-12 pt-12 flex justify-between align-center">
-                          <div class="assignee flex align-center gap-8">
-                            <app-avatar [name]="task.assigneeName || 'Unassigned'" [size]="24"></app-avatar>
-                            <span class="assignee-name">{{ task.assigneeName || 'Unassigned' }}</span>
-                          </div>
-                          @if (task.dueDate) {
-                            <span class="due-date" [ngClass]="{ 'overdue': isOverdue(task.dueDate) && col.status !== 'Done' }">
-                              {{ task.dueDate | date:'mediumDate' }}
+            @if (viewMode() === 'kanban') {
+              <div class="kanban-board">
+                @for (col of kanbanColumns; track col.status) {
+                  <div class="kanban-col">
+                    <div class="kanban-col-header">
+                      <h4>{{ col.name }}</h4>
+                      <span class="task-count">{{ getTaskCountInCol(col.status) }}</span>
+                    </div>
+                    
+                    <div class="kanban-col-cards">
+                      @for (task of getTasksByStatus(col.status); track task.id) {
+                        <div class="kanban-card" (click)="openTaskDetails(task.id)">
+                          <div class="card-header flex justify-between align-center mb-8">
+                            <span class="badge" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">
+                              {{ task.priority }}
                             </span>
+                            <button class="btn btn-text text-muted" (click)="openTaskDetailsAndEdit(task.id); $event.stopPropagation()" title="Edit Task" style="padding: 0; min-width: auto; height: auto;">
+                              <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
+                            </button>
+                          </div>
+                          <h5 class="task-title mb-8">{{ task.title }}</h5>
+                          @if (task.description) {
+                            <p class="task-desc">{{ task.description }}</p>
                           }
+                          <div class="card-footer mt-12 pt-12 flex justify-between align-center">
+                            <div class="assignee flex align-center gap-8">
+                              <app-avatar [name]="task.assigneeName || 'Unassigned'" [size]="24"></app-avatar>
+                              <span class="assignee-name">{{ task.assigneeName || 'Unassigned' }}</span>
+                            </div>
+                            @if (task.dueDate) {
+                              <span class="due-date" [ngClass]="{ 'overdue': isOverdue(task.dueDate) && col.status !== 'Done' }">
+                                {{ task.dueDate | date:'mediumDate' }}
+                              </span>
+                            }
+                          </div>
                         </div>
-                      </div>
-                    }
+                      }
+                    </div>
                   </div>
+                }
+              </div>
+            }
+
+            <!-- Table List View -->
+            @if (viewMode() === 'table') {
+              <div class="glass-card animate-fade-in">
+                <div class="responsive-table-container">
+                  <table class="responsive-table">
+                    <thead>
+                      <tr>
+                        <th>Task Title</th>
+                        <th>Parent Task</th>
+                        <th>Assignee</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th class="text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @if (tasks().length === 0) {
+                        <tr>
+                          <td colspan="7" class="text-center py-24 text-muted">
+                            No tasks found matching your filters.
+                          </td>
+                        </tr>
+                      } @else {
+                        @for (task of tasks(); track task.id) {
+                          <tr class="clickable-row" (click)="openTaskDetails(task.id)">
+                            <td>
+                              <div class="task-title-cell" style="font-weight: 600;">{{ task.title }}</div>
+                            </td>
+                            <td>
+                              @if (task.parentTaskTitle) {
+                                <span class="badge badge-status-todo" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                                  <span class="material-symbols-rounded" style="font-size: 14px;">subdirectory_arrow_right</span>
+                                  {{ task.parentTaskTitle }}
+                                </span>
+                              } @else {
+                                <span class="text-light">-</span>
+                              }
+                            </td>
+                            <td>
+                              <div class="flex align-center gap-8">
+                                <app-avatar [name]="task.assigneeName || 'Unassigned'" [size]="24"></app-avatar>
+                                <span style="font-size: 0.85rem;">{{ task.assigneeName || 'Unassigned' }}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span class="badge" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">
+                                {{ task.priority }}
+                              </span>
+                            </td>
+                            <td>
+                              <span class="badge" [ngClass]="'badge-status-' + task.status.toLowerCase()">
+                                {{ getStatusLabel(task.status) }}
+                              </span>
+                            </td>
+                            <td>
+                              @if (task.dueDate) {
+                                <span style="font-size: 0.85rem;" [ngClass]="{ 'overdue': isOverdue(task.dueDate) && task.status !== 'Done' }">
+                                  {{ task.dueDate | date:'mediumDate' }}
+                                </span>
+                              } @else {
+                                <span class="text-light">-</span>
+                              }
+                            </td>
+                            <td class="text-right" (click)="$event.stopPropagation()">
+                              <button class="btn btn-text text-muted" (click)="openTaskDetailsAndEdit(task.id)" title="Edit Task" style="padding: 4px; min-width: auto;">
+                                <span class="material-symbols-rounded" style="font-size: 18px;">edit</span>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
                 </div>
-              }
-            </div>
+              </div>
+            }
           </div>
         }
 
@@ -273,6 +381,7 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
       @if (selectedTaskId()) {
         <app-task-detail-modal
           [taskId]="selectedTaskId()!"
+          [startInEditMode]="editOnOpen()"
           (close)="closeTaskDetails()"
           (taskUpdated)="onTaskUpdated()"
         ></app-task-detail-modal>
@@ -400,6 +509,16 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                     class="form-input" 
                     [(ngModel)]="newTaskData.dueDate"
                   />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="task-parent">Parent Task</label>
+                  <select class="form-select" id="task-parent" name="parentTaskId" [(ngModel)]="newTaskData.parentTaskId">
+                    <option [value]="null">No Parent Task</option>
+                    @for (t of tasks(); track t.id) {
+                      <option [value]="t.id">{{ t.title }}</option>
+                    }
+                  </select>
                 </div>
               </div>
               
@@ -704,6 +823,28 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
       margin-top: 4px;
       display: block;
     }
+    .active-toggle {
+      background-color: #ffffff !important;
+      color: var(--primary) !important;
+      box-shadow: var(--shadow-sm);
+    }
+    .toggle-group button {
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all var(--transition-fast);
+    }
+    .toggle-group button:hover {
+      color: var(--text-main);
+    }
+    .clickable-row {
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+    .clickable-row:hover {
+      background-color: #f8fafc;
+    }
   `]
 })
 export class ProjectDetail implements OnInit {
@@ -722,6 +863,8 @@ export class ProjectDetail implements OnInit {
   
   protected loading = signal(false);
   protected activeTab = signal('tasks');
+  protected viewMode = signal<'kanban' | 'table'>('kanban');
+  protected editOnOpen = signal(false);
   protected projectId: string = '';
 
   // Task Kanban configuration
@@ -751,7 +894,7 @@ export class ProjectDetail implements OnInit {
 
   protected showCreateTaskModal = signal(false);
   protected creatingTask = signal(false);
-  protected newTaskData = { title: '', description: '', priority: 'Medium', assigneeId: null as string | null, dueDate: null as string | null };
+  protected newTaskData = { title: '', description: '', priority: 'Medium', assigneeId: null as string | null, dueDate: null as string | null, parentTaskId: null as string | null };
 
   protected showAddMemberModal = signal(false);
   protected addingMember = signal(false);
@@ -765,6 +908,17 @@ export class ProjectDetail implements OnInit {
     if (this.projectId) {
       this.loadProjectDetails();
     }
+    this.route.queryParams.subscribe(params => {
+      if (params['createTask'] === 'true') {
+        if (this.canCreateTask()) {
+          this.openCreateTaskModal();
+        } else {
+          this.toastService.error('You do not have permission to create tasks in this project.');
+        }
+        // Clear query parameters
+        this.router.navigate([], { relativeTo: this.route, queryParams: { createTask: null }, queryParamsHandling: 'merge' });
+      }
+    });
   }
 
   loadProjectDetails() {
@@ -942,8 +1096,14 @@ export class ProjectDetail implements OnInit {
     return dueDate.getTime() < Date.now();
   }
 
+  getStatusLabel(status: string): string {
+    if (status === 'InProgress') return 'In Progress';
+    if (status === 'InReview') return 'In Review';
+    return status;
+  }
+
   openCreateTaskModal() {
-    this.newTaskData = { title: '', description: '', priority: 'Medium', assigneeId: null, dueDate: null };
+    this.newTaskData = { title: '', description: '', priority: 'Medium', assigneeId: null, dueDate: null, parentTaskId: null };
     this.showCreateTaskModal.set(true);
   }
 
@@ -971,11 +1131,18 @@ export class ProjectDetail implements OnInit {
   }
 
   openTaskDetails(taskId: string) {
+    this.editOnOpen.set(false);
+    this.selectedTaskId.set(taskId);
+  }
+
+  openTaskDetailsAndEdit(taskId: string) {
+    this.editOnOpen.set(true);
     this.selectedTaskId.set(taskId);
   }
 
   closeTaskDetails() {
     this.selectedTaskId.set(null);
+    this.editOnOpen.set(false);
   }
 
   onTaskUpdated() {

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
@@ -10,11 +10,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Avatar } from '../../shared/components/avatar';
 import { LoadingSpinner } from '../../shared/components/loading-spinner';
+import { SafeHtmlPipe } from '../../shared/pipes/safe-html.pipe';
 
 @Component({
   selector: 'app-task-detail-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, Avatar, LoadingSpinner],
+  imports: [CommonModule, FormsModule, Avatar, LoadingSpinner, SafeHtmlPipe],
   template: `
     <div class="drawer-overlay" (click)="onClose()">
       <div class="drawer-container animate-slide-in" (click)="$event.stopPropagation()">
@@ -45,7 +46,8 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
                     </span>
                   </div>
                   <h2 class="mb-12">{{ task().title }}</h2>
-                  <p class="desc-text mb-20">{{ task().description || 'No description provided.' }}</p>
+                  
+                  <div class="desc-text mb-20" [innerHTML]="task().description || 'No description provided.' | safeHtml"></div>
 
                   <div class="task-details-grid">
                     <div class="detail-item">
@@ -68,6 +70,38 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
                         {{ task().createdByName }} ({{ task().createdAt | date:'shortDate' }})
                       </div>
                     </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Parent Task</span>
+                      <div class="detail-value">
+                        @if (task().parentTaskId) {
+                          <a href="javascript:void(0)" (click)="navigateToTask(task().parentTaskId)" class="flex align-center gap-4 text-primary font-semibold" style="font-size: 0.85rem; text-decoration: none;">
+                            <span class="material-symbols-rounded" style="font-size: 16px;">subdirectory_arrow_right</span>
+                            {{ task().parentTaskTitle }}
+                          </a>
+                        } @else {
+                          <span class="text-muted" style="font-size: 0.85rem;">-</span>
+                        }
+                      </div>
+                    </div>
+
+                    @if (task().childTasks && task().childTasks.length > 0) {
+                      <div class="detail-item col-span-2 mt-12" style="grid-column: span 2;">
+                        <span class="detail-label mb-8 block">Subtasks</span>
+                        <div class="subtasks-list flex flex-col gap-8">
+                          @for (sub of task().childTasks; track sub.id) {
+                            <div class="subtask-item flex align-center justify-between p-8 bg-gray-50 border rounded-8 clickable-row" (click)="navigateToTask(sub.id)" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; background-color: #f8fafc; transition: all var(--transition-fast);">
+                              <span class="subtask-title flex align-center gap-8 font-medium text-sm" style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 500;">
+                                <span class="material-symbols-rounded text-muted" style="font-size: 16px;">subdirectory_arrow_right</span>
+                                {{ sub.title }}
+                              </span>
+                              <span class="badge badge-sm" [ngClass]="'badge-status-' + sub.status.toLowerCase()">
+                                {{ getStatusLabel(sub.status) }}
+                              </span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
                   </div>
 
                   @if (canEditOwnTask()) {
@@ -94,14 +128,42 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label" for="edit-desc">Description</label>
-                    <textarea 
-                      id="edit-desc" 
-                      name="description" 
-                      class="form-input form-textarea" 
-                      [(ngModel)]="editData.description" 
-                      maxlength="5000"
-                    ></textarea>
+                    <div class="flex justify-between align-center mb-4" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label class="form-label" for="edit-desc" style="margin-bottom: 0;">Description</label>
+                      <div class="flex gap-8 align-center" style="display: flex; gap: 8px; align-items: center;">
+                        @if (!isDescPreview()) {
+                          <div class="flex gap-4" style="display: flex; gap: 4px;">
+                            <button type="button" class="btn btn-sm btn-text p-4" (click)="insertTag('<strong>', '</strong>')" title="Bold" style="padding: 4px; min-width: auto;">
+                              <span class="material-symbols-rounded" style="font-size: 16px;">format_bold</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-text p-4" (click)="insertTag('<em>', '</em>')" title="Italic" style="padding: 4px; min-width: auto;">
+                              <span class="material-symbols-rounded" style="font-size: 16px;">format_italic</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-text p-4" (click)="insertLink()" title="Insert Link" style="padding: 4px; min-width: auto;">
+                              <span class="material-symbols-rounded" style="font-size: 16px;">link</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-text p-4" (click)="insertTag('<ul>\n  <li>', '</li>\n</ul>')" title="Bullet List" style="padding: 4px; min-width: auto;">
+                              <span class="material-symbols-rounded" style="font-size: 16px;">format_list_bulleted</span>
+                            </button>
+                          </div>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline py-2 px-8" style="font-size: 0.75rem; padding: 2px 8px;" (click)="isDescPreview.set(!isDescPreview())">
+                          {{ isDescPreview() ? 'Edit' : 'Preview' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    @if (!isDescPreview()) {
+                      <textarea 
+                        id="edit-desc" 
+                        name="description" 
+                        class="form-input form-textarea" 
+                        [(ngModel)]="editData.description" 
+                        maxlength="5000"
+                      ></textarea>
+                    } @else {
+                      <div class="form-input form-textarea overflow-y-auto" style="min-height: 100px; background-color: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;" [innerHTML]="editData.description | safeHtml"></div>
+                    }
                   </div>
 
                   <div class="grid grid-cols-2 gap-16">
@@ -148,6 +210,20 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
                         [ngModel]="editData.dueDate | date:'yyyy-MM-dd'"
                         (ngModelChange)="editData.dueDate = $event"
                       />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 mt-12">
+                    <div class="form-group">
+                      <label class="form-label" for="edit-parent">Parent Task</label>
+                      <select class="form-select" id="edit-parent" name="parentTaskId" [(ngModel)]="editData.parentTaskId">
+                        <option [value]="null">No Parent Task</option>
+                        @for (t of projectTasks(); track t.id) {
+                          @if (t.id !== taskId) {
+                            <option [value]="t.id">{{ t.title }}</option>
+                          }
+                        }
+                      </select>
                     </div>
                   </div>
 
@@ -254,19 +330,23 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
                     <div class="grid grid-cols-2 gap-16">
                       @for (file of attachments(); track file.id) {
                         <div class="file-card flex align-center justify-between gap-12">
-                          <div class="file-info flex align-center gap-8 min-width-0">
-                            <span class="material-symbols-rounded file-icon">image</span>
+                          <div class="file-info flex align-center gap-8 min-width-0" (click)="file.objectUrl ? openLightbox(file.objectUrl) : null" style="cursor: pointer;">
+                            @if (file.objectUrl) {
+                              <img [src]="file.objectUrl" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border);" />
+                            } @else {
+                              <span class="material-symbols-rounded file-icon">image</span>
+                            }
                             <div class="file-name-meta min-width-0">
-                              <div class="file-name" [title]="file.fileName">{{ file.fileName }}</div>
+                              <div class="file-name" [title]="file.fileName" style="font-weight: 600;">{{ file.fileName }}</div>
                               <div class="file-size text-light">{{ formatBytes(file.fileSize) }}</div>
                             </div>
                           </div>
                           <div class="file-actions flex gap-8">
-                            <button class="btn btn-text text-muted" (click)="downloadFile(file)" title="Download">
+                            <button class="btn btn-text text-muted" (click)="downloadFile(file); $event.stopPropagation()" title="Download" style="padding: 4px; min-width: auto;">
                               <span class="material-symbols-rounded">download</span>
                             </button>
                             @if (canDeleteAttachment(file)) {
-                              <button class="btn btn-text text-danger-color" (click)="deleteFile(file.id)" title="Delete">
+                              <button class="btn btn-text text-danger-color" (click)="deleteFile(file.id); $event.stopPropagation()" title="Delete" style="padding: 4px; min-width: auto;">
                                 <span class="material-symbols-rounded">delete</span>
                               </button>
                             }
@@ -314,6 +394,16 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
           </div>
         }
       </div>
+      
+      <!-- Lightbox Image Preview Modal -->
+      @if (lightboxUrl()) {
+        <div class="modal-overlay" (click)="closeLightbox()" style="z-index: 1200; background-color: rgba(15, 23, 42, 0.75); display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0;">
+          <div class="modal-container" (click)="$event.stopPropagation()" style="max-width: 90vw; max-height: 90vh; background: none; border: none; padding: 0; box-shadow: none; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+            <button class="close-btn" (click)="closeLightbox()" style="position: absolute; top: -40px; right: 0; color: #ffffff; font-size: 2.5rem; background: none; border: none; cursor: pointer;">&times;</button>
+            <img [src]="lightboxUrl()" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: var(--shadow-lg);" />
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -581,8 +671,9 @@ import { LoadingSpinner } from '../../shared/components/loading-spinner';
     }
   `]
 })
-export class TaskDetailModal implements OnInit {
+export class TaskDetailModal implements OnInit, OnDestroy {
   @Input() taskId: string = '';
+  @Input() startInEditMode = false;
   @Output() close = new EventEmitter<void>();
   @Output() taskUpdated = new EventEmitter<void>();
 
@@ -599,6 +690,7 @@ export class TaskDetailModal implements OnInit {
   protected attachments = signal<any[]>([]);
   protected auditLogs = signal<any[]>([]);
   protected projectMembers = signal<any[]>([]);
+  protected projectTasks = signal<any[]>([]);
 
   protected loading = signal(false);
   protected activeSubTab = signal('comments');
@@ -606,7 +698,11 @@ export class TaskDetailModal implements OnInit {
   // Edit Mode state
   protected isEditing = signal(false);
   protected saving = signal(false);
-  protected editData = { title: '', description: '', status: '', priority: '', assigneeId: null as string | null, dueDate: null as string | null };
+  protected editData = { title: '', description: '', status: '', priority: '', assigneeId: null as string | null, dueDate: null as string | null, parentTaskId: null as string | null };
+  protected isDescPreview = signal(false);
+
+  // Lightbox preview state
+  protected lightboxUrl = signal<string | null>(null);
 
   // Comments state
   protected newCommentText: string = '';
@@ -616,6 +712,9 @@ export class TaskDetailModal implements OnInit {
   protected uploadingFile = signal(false);
 
   ngOnInit(): void {
+    if (this.startInEditMode) {
+      this.isEditing.set(true);
+    }
     if (this.taskId) {
       this.loadTaskDetails();
     }
@@ -632,13 +731,21 @@ export class TaskDetailModal implements OnInit {
           status: t.status,
           priority: t.priority,
           assigneeId: t.assigneeId || null,
-          dueDate: t.dueDate
+          dueDate: t.dueDate,
+          parentTaskId: t.parentTaskId || null
         };
         
         // Fetch project members list for assignee dropdown in editing
         this.projectService.getMembers(t.projectId).subscribe({
           next: (mList) => {
             this.projectMembers.set(mList || []);
+          }
+        });
+
+        // Fetch project tasks list for parent task selection in editing
+        this.taskService.getProjectTasks(t.projectId, { search: '', status: '', priority: '', page: 1, pageSize: 100 }).subscribe({
+          next: (res) => {
+            this.projectTasks.set(res.items || []);
           }
         });
 
@@ -666,7 +773,25 @@ export class TaskDetailModal implements OnInit {
   loadAttachments() {
     this.attachmentService.getAttachments(this.taskId).subscribe({
       next: (aList) => {
-        this.attachments.set(aList || []);
+        const listWithUrls = (aList || []).map((a: any) => ({ ...a, objectUrl: null }));
+        this.attachments.set(listWithUrls);
+
+        listWithUrls.forEach((a: any) => {
+          this.attachmentService.downloadAttachment(a.id).subscribe({
+            next: (blob) => {
+              const url = window.URL.createObjectURL(blob);
+              this.attachments.update(curr => curr.map(item => item.id === a.id ? { ...item, objectUrl: url } : item));
+            }
+          });
+        });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.attachments().forEach(a => {
+      if (a.objectUrl) {
+        window.URL.revokeObjectURL(a.objectUrl);
       }
     });
   }
@@ -711,6 +836,7 @@ export class TaskDetailModal implements OnInit {
 
   cancelEdit() {
     this.isEditing.set(false);
+    this.isDescPreview.set(false);
     // Revert editData
     const t = this.task();
     this.editData = {
@@ -719,7 +845,8 @@ export class TaskDetailModal implements OnInit {
       status: t.status,
       priority: t.priority,
       assigneeId: t.assigneeId || null,
-      dueDate: t.dueDate
+      dueDate: t.dueDate,
+      parentTaskId: t.parentTaskId || null
     };
   }
 
@@ -734,6 +861,7 @@ export class TaskDetailModal implements OnInit {
       priority: this.editData.priority,
       assigneeId: this.editData.assigneeId === 'null' || !this.editData.assigneeId ? null : this.editData.assigneeId,
       dueDate: this.editData.dueDate || null,
+      parentTaskId: this.editData.parentTaskId === 'null' || !this.editData.parentTaskId ? null : this.editData.parentTaskId,
       rowVersion: this.task().rowVersion // Send original base64 rowVersion
     };
 
@@ -746,12 +874,14 @@ export class TaskDetailModal implements OnInit {
           status: updated.status,
           priority: updated.priority,
           assigneeId: updated.assigneeId || null,
-          dueDate: updated.dueDate
+          dueDate: updated.dueDate,
+          parentTaskId: updated.parentTaskId || null
         };
         this.isEditing.set(false);
+        this.isDescPreview.set(false);
         this.saving.set(false);
         this.toastService.success('Task details saved.');
-        this.loadAuditLogs();
+        this.loadTaskDetails(); // Full reload to get new titles & child lists
         this.taskUpdated.emit();
       },
       error: (err) => {
@@ -917,5 +1047,42 @@ export class TaskDetailModal implements OnInit {
     if (action.endsWith('AttachmentUploaded')) return 'attached file to';
     if (action.endsWith('AttachmentDeleted')) return 'deleted file from';
     return action.toLowerCase();
+  }
+
+  insertTag(openTag: string, closeTag: string) {
+    const textarea = document.getElementById('edit-desc') as HTMLTextAreaElement;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+    const replacement = openTag + selected + closeTag;
+    this.editData.description = text.substring(0, start) + replacement + text.substring(end);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + openTag.length, start + openTag.length + selected.length);
+    }, 50);
+  }
+
+  insertLink() {
+    const url = prompt('Enter the link URL (e.g. https://example.com):');
+    if (url) {
+      this.insertTag(`<a href="${url}">`, '</a>');
+    }
+  }
+
+  navigateToTask(id: string) {
+    this.taskId = id;
+    this.isEditing.set(false);
+    this.isDescPreview.set(false);
+    this.loadTaskDetails();
+  }
+
+  openLightbox(url: string) {
+    this.lightboxUrl.set(url);
+  }
+
+  closeLightbox() {
+    this.lightboxUrl.set(null);
   }
 }

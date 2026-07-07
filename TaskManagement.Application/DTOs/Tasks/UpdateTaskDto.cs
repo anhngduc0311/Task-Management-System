@@ -24,6 +24,8 @@ namespace TaskManagement.Application.DTOs.Tasks
 
         public DateTime? DueDate { get; set; }
 
+        public Guid? ParentTaskId { get; set; }
+        
         [Required]
         public string RowVersion { get; set; } = string.Empty; // Base64 string
     }

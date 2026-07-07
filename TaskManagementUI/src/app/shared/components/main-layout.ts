@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -59,7 +59,29 @@ import { Avatar } from './avatar';
           <div class="header-left">
             <h2 class="page-title">{{ getPageTitle() }}</h2>
           </div>
-          <div class="header-right">
+          <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
+            <div class="quick-actions" style="position: relative;">
+              <button class="btn btn-primary" (click)="toggleQuickMenu()" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-rounded" style="font-size: 16px;">add</span>
+                Quick Create
+              </button>
+              
+              @if (showQuickMenu()) {
+                <div class="glass-card" (click)="$event.stopPropagation()" style="position: absolute; top: 100%; right: 0; margin-top: 8px; z-index: 1000; min-width: 160px; padding: 8px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-md); background: white; border: 1px solid var(--border); border-radius: 8px;">
+                  @if (canCreateProject()) {
+                    <button class="btn btn-text" (click)="quickCreateProject()" style="padding: 8px; font-size: 0.85rem; text-align: left; display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; cursor: pointer; color: var(--text-main);">
+                      <span class="material-symbols-rounded" style="font-size: 18px; color: var(--primary);">folder</span>
+                      New Project
+                    </button>
+                  }
+                  <button class="btn btn-text" (click)="quickCreateTask()" style="padding: 8px; font-size: 0.85rem; text-align: left; display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; cursor: pointer; color: var(--text-main);">
+                    <span class="material-symbols-rounded" style="font-size: 18px; color: var(--primary);">assignment</span>
+                    Create Task
+                  </button>
+                </div>
+              }
+            </div>
+
             <div class="welcome-text">
               Hello, <strong>{{ getUserName() }}</strong>
             </div>
@@ -227,6 +249,36 @@ export class MainLayout {
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  protected showQuickMenu = signal(false);
+
+  toggleQuickMenu() {
+    this.showQuickMenu.set(!this.showQuickMenu());
+  }
+
+  canCreateProject(): boolean {
+    const user = this.authService.currentUser();
+    return user?.roles?.includes('Admin') || user?.roles?.includes('ProjectManager');
+  }
+
+  quickCreateProject() {
+    this.showQuickMenu.set(false);
+    this.router.navigate(['/projects'], { queryParams: { create: 'true' } });
+  }
+
+  quickCreateTask() {
+    this.showQuickMenu.set(false);
+    const url = this.router.url;
+    // Check if we are currently on a project details page
+    const projectMatch = url.match(/^\/projects\/([a-f0-9-]{36})/i);
+    if (projectMatch) {
+      const projectId = projectMatch[1];
+      this.router.navigate([`/projects/${projectId}`], { queryParams: { createTask: 'true' } });
+    } else {
+      this.toastService.info('Please open a specific project to create a task.');
+      this.router.navigate(['/projects']);
+    }
+  }
 
   isAdmin(): boolean {
     const user = this.authService.currentUser();

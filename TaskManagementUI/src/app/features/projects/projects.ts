@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProjectService } from '../../core/services/project.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -239,6 +239,8 @@ export class Projects implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected projects = signal<any[]>([]);
   protected filteredProjects = signal<any[]>([]);
@@ -261,6 +263,13 @@ export class Projects implements OnInit {
 
   ngOnInit(): void {
     this.loadProjects();
+    this.route.queryParams.subscribe(params => {
+      if (params['create'] === 'true') {
+        this.openCreateModal();
+        // Clear query parameters
+        this.router.navigate([], { relativeTo: this.route, queryParams: { create: null }, queryParamsHandling: 'merge' });
+      }
+    });
   }
 
   loadProjects() {
