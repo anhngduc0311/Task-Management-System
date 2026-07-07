@@ -150,9 +150,23 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                       <span class="task-count">{{ getTaskCountInCol(col.status) }}</span>
                     </div>
                     
-                    <div class="kanban-col-cards">
+                    <div 
+                      class="kanban-col-cards"
+                      [class.drag-over]="activeDragOverStatus() === col.status"
+                      (dragover)="onDragOver($event)"
+                      (dragenter)="onDragEnter($event, col.status)"
+                      (dragleave)="onDragLeave($event)"
+                      (drop)="onDrop($event, col.status)"
+                    >
                       @for (task of getTasksByStatus(col.status); track task.id) {
-                        <div class="kanban-card" (click)="openTaskDetails(task.id)">
+                        <div 
+                          class="kanban-card" 
+                          [class.dragging]="draggedTask()?.id === task.id"
+                          draggable="true"
+                          (dragstart)="onDragStart($event, task)"
+                          (dragend)="onDragEnd($event)"
+                          (click)="openTaskDetails(task.id)"
+                        >
                           <div class="card-header flex justify-between align-center mb-8">
                             <span class="badge" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">
                               {{ task.priority }}
@@ -176,6 +190,13 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                               </span>
                             }
                           </div>
+                        </div>
+                      }
+
+                      <!-- Dotted drop placeholder like in Jira -->
+                      @if (draggedTask() && draggedTask()?.status !== col.status && activeDragOverStatus() === col.status) {
+                        <div class="drag-placeholder">
+                          Drop here to change status
                         </div>
                       }
                     </div>
@@ -684,13 +705,14 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
       gap: 10px;
       overflow-y: auto;
       flex-grow: 1;
+      min-height: 250px;
     }
     .kanban-card {
       background-color: #ffffff;
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px;
-      cursor: pointer;
+      cursor: grab;
       box-shadow: var(--shadow-sm);
       transition: all var(--transition-fast);
     }
@@ -698,6 +720,41 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
       border-color: var(--primary);
       box-shadow: var(--shadow-md);
       transform: translateY(-1px);
+    }
+    .kanban-card.dragging {
+      opacity: 0.4;
+      border: 2px dashed var(--primary);
+      box-shadow: none;
+      transform: scale(0.96) rotate(1deg);
+      cursor: grabbing;
+    }
+    .kanban-col-cards.drag-over {
+      background-color: rgba(79, 70, 229, 0.04);
+      border: 2px dashed rgba(79, 70, 229, 0.2);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .drag-placeholder {
+      border: 2px dashed rgba(79, 70, 229, 0.4);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background-color: rgba(79, 70, 229, 0.02);
+      color: rgba(79, 70, 229, 0.6);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 70px;
+      pointer-events: none;
+      animation: pulse-border 1.5s infinite ease-in-out;
+    }
+    @keyframes pulse-border {
+      0% { border-color: rgba(79, 70, 229, 0.3); background-color: rgba(79, 70, 229, 0.01); }
+      50% { border-color: rgba(79, 70, 229, 0.6); background-color: rgba(79, 70, 229, 0.04); }
+      100% { border-color: rgba(79, 70, 229, 0.3); background-color: rgba(79, 70, 229, 0.01); }
     }
     .task-title {
       font-size: 0.875rem;
@@ -901,6 +958,10 @@ export class ProjectDetail implements OnInit {
   protected showAddMemberModal = signal(false);
   protected addingMember = signal(false);
   protected newMemberData = { email: '', roleInProject: 'Member' };
+
+  // Drag and Drop State
+  protected draggedTask = signal<any | null>(null);
+  protected activeDragOverStatus = signal<string | null>(null);
 
   // Task details drawer
   protected selectedTaskId = signal<string | null>(null);
@@ -1166,6 +1227,79 @@ export class ProjectDetail implements OnInit {
   onTaskUpdated() {
     this.loadTasks();
     this.loadAuditLogs();
+  }
+
+  // Drag and Drop Handlers
+  onDragStart(event: DragEvent, task: any) {
+    this.draggedTask.set(task);
+    // Add custom class to the target after a tiny timeout to keep the visual drag image intact
+    setTimeout(() => {
+      const card = event.target as HTMLElement;
+      if (card) {
+        card.classList.add('dragging');
+      }
+    }, 0);
+  }
+
+  onDragEnd(event: DragEvent) {
+    this.draggedTask.set(null);
+    this.activeDragOverStatus.set(null);
+    const card = event.target as HTMLElement;
+    if (card) {
+      card.classList.remove('dragging');
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  onDragEnter(event: DragEvent, status: string) {
+    event.preventDefault();
+    this.activeDragOverStatus.set(status);
+  }
+
+  onDragLeave(event: DragEvent) {
+    // Prevent flickering when dragging over child elements
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    const currentTarget = event.currentTarget as HTMLElement;
+    if (relatedTarget && currentTarget && currentTarget.contains(relatedTarget)) {
+      return;
+    }
+    this.activeDragOverStatus.set(null);
+  }
+
+  onDrop(event: DragEvent, targetStatus: string) {
+    event.preventDefault();
+    const task = this.draggedTask();
+    if (!task) return;
+
+    const oldStatus = task.status;
+    if (oldStatus === targetStatus) return;
+
+    // Optimistic UI Update: immediately change status locally for fluid feel
+    const updatedTasks = this.tasks().map(t => t.id === task.id ? { ...t, status: targetStatus } : t);
+    this.tasks.set(updatedTasks);
+
+    // Call service to update on backend
+    this.taskService.updateTaskStatus(task.id, targetStatus).subscribe({
+      next: () => {
+        this.toastService.success(`Task status updated to ${this.getStatusLabel(targetStatus)}`);
+        this.loadTasks();
+        this.loadAuditLogs();
+      },
+      error: (err) => {
+        // Revert optimistic update
+        const revertedTasks = this.tasks().map(t => t.id === task.id ? { ...t, status: oldStatus } : t);
+        this.tasks.set(revertedTasks);
+        
+        const msg = err.error?.message || 'Failed to update task status.';
+        this.toastService.error(msg);
+      }
+    });
+
+    this.draggedTask.set(null);
+    this.activeDragOverStatus.set(null);
   }
 
   // Members Management
