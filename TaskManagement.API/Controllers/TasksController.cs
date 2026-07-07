@@ -106,6 +106,8 @@ namespace TaskManagement.API.Controllers
                     DueDate = t.DueDate,
                     ParentTaskId = t.ParentTaskId,
                     ParentTaskTitle = t.ParentTask != null ? t.ParentTask.Title : null,
+                    SubtasksCount = t.ChildTasks.Count(c => !c.IsDeleted),
+                    CompletedSubtasksCount = t.ChildTasks.Count(c => !c.IsDeleted && c.Status == TaskStatus.Done),
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
                     RowVersion = Convert.ToBase64String(t.RowVersion)
@@ -275,6 +277,8 @@ namespace TaskManagement.API.Controllers
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
                 RowVersion = Convert.ToBase64String(task.RowVersion),
+                SubtasksCount = childTasks.Count,
+                CompletedSubtasksCount = childTasks.Count(c => c.Status == "Done"),
                 ChildTasks = childTasks
             };
 
@@ -563,6 +567,14 @@ namespace TaskManagement.API.Controllers
                 return NotFound(new { message = "Task not found." });
             }
 
+            var hasUnfinishedChildren = await _dbContext.Tasks
+                .AnyAsync(t => t.ParentTaskId == id && !t.IsDeleted && t.Status != TaskStatus.Done && t.Status != TaskStatus.Cancelled);
+
+            if (hasUnfinishedChildren)
+            {
+                return BadRequest(new { message = "Cannot delete task because it has child tasks that are not Done or Cancelled." });
+            }
+
             task.IsDeleted = true;
             task.UpdatedAt = DateTime.UtcNow;
 
@@ -578,6 +590,134 @@ namespace TaskManagement.API.Controllers
             );
 
             return Ok(new { message = "Task soft-deleted successfully." });
+        }
+
+        [HttpGet("tasks/{id}/children")]
+        public async Task<IActionResult> GetTaskChildren(Guid id)
+        {
+            var canView = await _permissionService.CanViewTaskAsync(CurrentUserId, id);
+            if (!canView)
+            {
+                return Forbid();
+            }
+
+            var task = await _dbContext.Tasks.FindAsync(id);
+            if (task == null)
+            {
+                return NotFound(new { message = "Task not found." });
+            }
+
+            var children = await _dbContext.Tasks
+                .Where(t => t.ParentTaskId == id && !t.IsDeleted)
+                .Select(t => new SubTaskDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status.ToString()
+                })
+                .ToListAsync();
+
+            return Ok(children);
+        }
+
+        [HttpPatch("tasks/{id}/parent")]
+        public async Task<IActionResult> SetParentTask(Guid id, [FromBody] SetParentTaskDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var canEdit = await _permissionService.CanEditTaskAsync(CurrentUserId, id);
+            if (!canEdit)
+            {
+                return Forbid();
+            }
+
+            var task = await _dbContext.Tasks.FindAsync(id);
+            if (task == null)
+            {
+                return NotFound(new { message = "Task not found." });
+            }
+
+            if (dto.ParentTaskId == id)
+            {
+                return BadRequest(new { message = "A task cannot be its own parent." });
+            }
+
+            var parentTask = await _dbContext.Tasks.FindAsync(dto.ParentTaskId);
+            if (parentTask == null || parentTask.IsDeleted || parentTask.ProjectId != task.ProjectId)
+            {
+                return BadRequest(new { message = "Parent task must exist, not be deleted, and belong to the same project." });
+            }
+
+            // Check for circular dependency
+            var currentAncestorId = parentTask.ParentTaskId;
+            while (currentAncestorId.HasValue)
+            {
+                if (currentAncestorId.Value == id)
+                {
+                    return BadRequest(new { message = "Setting this parent task would create a circular dependency." });
+                }
+                var nextAncestor = await _dbContext.Tasks.FindAsync(currentAncestorId.Value);
+                currentAncestorId = nextAncestor?.ParentTaskId;
+            }
+
+            var oldValue = task.ParentTaskId?.ToString();
+            task.ParentTaskId = dto.ParentTaskId;
+            task.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                entityType: "Task",
+                entityId: task.Id.ToString(),
+                action: "TaskParentChanged",
+                changedById: CurrentUserId,
+                oldValue: oldValue,
+                newValue: dto.ParentTaskId.ToString(),
+                ipAddress: ClientIpAddress,
+                userAgent: ClientUserAgent
+            );
+
+            return Ok(new { message = "Parent task updated successfully." });
+        }
+
+        [HttpPatch("tasks/{id}/remove-parent")]
+        public async Task<IActionResult> RemoveParentTask(Guid id)
+        {
+            var canEdit = await _permissionService.CanEditTaskAsync(CurrentUserId, id);
+            if (!canEdit)
+            {
+                return Forbid();
+            }
+
+            var task = await _dbContext.Tasks.FindAsync(id);
+            if (task == null)
+            {
+                return NotFound(new { message = "Task not found." });
+            }
+
+            if (!task.ParentTaskId.HasValue)
+            {
+                return BadRequest(new { message = "Task does not have a parent task." });
+            }
+
+            var oldValue = task.ParentTaskId.Value.ToString();
+            task.ParentTaskId = null;
+            task.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                entityType: "Task",
+                entityId: task.Id.ToString(),
+                action: "TaskParentRemoved",
+                changedById: CurrentUserId,
+                oldValue: oldValue,
+                newValue: null,
+                ipAddress: ClientIpAddress,
+                userAgent: ClientUserAgent
+            );
+
+            return Ok(new { message = "Parent task removed successfully." });
         }
 
         [HttpGet("tasks/my-tasks")]
@@ -599,6 +739,10 @@ namespace TaskManagement.API.Controllers
                     CreatedById = t.CreatedById,
                     CreatedByName = t.CreatedBy.FullName,
                     DueDate = t.DueDate,
+                    ParentTaskId = t.ParentTaskId,
+                    ParentTaskTitle = t.ParentTask != null ? t.ParentTask.Title : null,
+                    SubtasksCount = t.ChildTasks.Count(c => !c.IsDeleted),
+                    CompletedSubtasksCount = t.ChildTasks.Count(c => !c.IsDeleted && c.Status == TaskStatus.Done),
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt,
                     RowVersion = Convert.ToBase64String(t.RowVersion)

@@ -20,6 +20,8 @@ namespace TaskManagement.Application.DTOs.Tasks
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string RowVersion { get; set; } = string.Empty; // Base64 string
+        public int SubtasksCount { get; set; }
+        public int CompletedSubtasksCount { get; set; }
         public System.Collections.Generic.List<SubTaskDto> ChildTasks { get; set; } = new System.Collections.Generic.List<SubTaskDto>();
     }
 

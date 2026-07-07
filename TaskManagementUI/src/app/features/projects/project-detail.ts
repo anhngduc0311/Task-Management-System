@@ -180,6 +180,23 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                             </button>
                           </div>
                           <h5 class="task-title mb-8">{{ task.title }}</h5>
+                          <div class="flex gap-4 flex-wrap align-center mb-8">
+                            <!-- Parent Task Indicator -->
+                            @if (task.parentTaskTitle) {
+                              <div class="parent-task-badge" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; color: var(--text-muted); background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px;">
+                                <span class="material-symbols-rounded" style="font-size: 12px; font-weight: bold;">subdirectory_arrow_right</span>
+                                <span style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="task.parentTaskTitle">{{ task.parentTaskTitle }}</span>
+                              </div>
+                            }
+
+                            <!-- Subtask Progress Indicator -->
+                            @if (task.subtasksCount > 0) {
+                              <div class="subtask-progress" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; color: #4f46e5; background-color: #e0e7ff; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+                                <span class="material-symbols-rounded" style="font-size: 12px;">account_tree</span>
+                                <span>{{ task.completedSubtasksCount }}/{{ task.subtasksCount }} subtasks</span>
+                              </div>
+                            }
+                          </div>
                           @if (task.description) {
                             <p class="task-desc">{{ task.description }}</p>
                           }
