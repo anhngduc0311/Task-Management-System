@@ -57,10 +57,25 @@ import { HttpClient } from '@angular/common/http';
       <!-- Filter Controls Panel -->
       <mat-card class="glass-card filters-card mb-24">
         <mat-card-content>
+          <div class="flex justify-between align-center mb-16 flex-wrap gap-12" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
+                <span class="material-symbols-rounded text-primary" style="font-size: 24px;">analytics</span>
+                Work Performance & Reports
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">Filter and analyze task distribution, deadlines, and completion metrics.</p>
+            </div>
+            <button class="btn btn-outline btn-sm" (click)="resetFilters()" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-weight: 500; height: 36px; cursor: pointer;">
+              <span class="material-symbols-rounded" style="font-size: 16px;">restart_alt</span>
+              Reset Filters
+            </button>
+          </div>
+
           <div class="filter-grid">
             <!-- Project Filter -->
             <mat-form-field appearance="outline" class="filter-item">
               <mat-label>Project</mat-label>
+              <span matPrefix class="material-symbols-rounded mr-8" style="color: var(--text-muted); font-size: 20px; vertical-align: middle;">folder_open</span>
               <mat-select [(ngModel)]="filters.projectId" (selectionChange)="onProjectChange()">
                 <mat-option [value]="null">All Projects</mat-option>
                 @for (p of projects(); track p.id) {
@@ -72,6 +87,7 @@ import { HttpClient } from '@angular/common/http';
             <!-- Assignee Filter -->
             <mat-form-field appearance="outline" class="filter-item">
               <mat-label>Assignee</mat-label>
+              <span matPrefix class="material-symbols-rounded mr-8" style="color: var(--text-muted); font-size: 20px; vertical-align: middle;">person</span>
               <mat-select [(ngModel)]="filters.assigneeId" (selectionChange)="refreshReports()">
                 <mat-option [value]="null">All Assignees</mat-option>
                 @for (u of assignees(); track u.id) {
@@ -83,6 +99,7 @@ import { HttpClient } from '@angular/common/http';
             <!-- Status Filter -->
             <mat-form-field appearance="outline" class="filter-item">
               <mat-label>Status</mat-label>
+              <span matPrefix class="material-symbols-rounded mr-8" style="color: var(--text-muted); font-size: 20px; vertical-align: middle;">flaky</span>
               <mat-select [(ngModel)]="filters.status" (selectionChange)="refreshReports()">
                 <mat-option [value]="null">All Statuses</mat-option>
                 <mat-option value="Todo">Todo</mat-option>
@@ -96,6 +113,7 @@ import { HttpClient } from '@angular/common/http';
             <!-- Priority Filter -->
             <mat-form-field appearance="outline" class="filter-item">
               <mat-label>Priority</mat-label>
+              <span matPrefix class="material-symbols-rounded mr-8" style="color: var(--text-muted); font-size: 20px; vertical-align: middle;">label_important</span>
               <mat-select [(ngModel)]="filters.priority" (selectionChange)="refreshReports()">
                 <mat-option [value]="null">All Priorities</mat-option>
                 <mat-option value="Low">Low</mat-option>
@@ -108,6 +126,7 @@ import { HttpClient } from '@angular/common/http';
             <!-- Date Range Filter -->
             <mat-form-field appearance="outline" class="filter-item date-range-field">
               <mat-label>Date Range (Created At)</mat-label>
+              <span matPrefix class="material-symbols-rounded mr-8" style="color: var(--text-muted); font-size: 20px; vertical-align: middle;">date_range</span>
               <mat-date-range-input [rangePicker]="picker">
                 <input matStartDate [(ngModel)]="filters.dateFrom" placeholder="Start date" (dateChange)="refreshReports()">
                 <input matEndDate [(ngModel)]="filters.dateTo" placeholder="End date" (dateChange)="refreshReports()">
@@ -153,60 +172,86 @@ import { HttpClient } from '@angular/common/http';
       <div class="kpi-grid mb-24">
         <!-- Card 1: Total Tasks -->
         <mat-card class="glass-card kpi-card">
-          <mat-card-content class="flex align-center justify-between">
-            <div>
-              <div class="kpi-label">Total Tasks</div>
-              <div class="kpi-value text-primary">{{ summary().totalTasks }}</div>
+          <mat-card-content>
+            <div class="flex align-center justify-between">
+              <div>
+                <div class="kpi-label">Total Tasks</div>
+                <div class="kpi-value text-primary" style="font-size: 2.25rem; font-weight: 800; color: #4f46e5;">
+                  {{ summary().totalTasks }}
+                </div>
+              </div>
+              <div class="kpi-icon-bg bg-primary-light">
+                <span class="material-symbols-rounded">assignment</span>
+              </div>
             </div>
-            <div class="kpi-icon-bg bg-primary-light text-primary">
-              <span class="material-symbols-rounded">assignment</span>
+            <div class="kpi-footer mt-12" style="font-size: 0.75rem; color: var(--text-muted);">
+              All tasks in scope
             </div>
           </mat-card-content>
         </mat-card>
 
         <!-- Card 2: Completed Tasks -->
         <mat-card class="glass-card kpi-card">
-          <mat-card-content class="flex align-center justify-between">
-            <div>
-              <div class="kpi-label">Completed Tasks</div>
-              <div class="kpi-value text-success">
-                {{ summary().completedTasks }}
-                <span class="kpi-subtext" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
-                  ({{ summary().completedOnTime }} on-time)
-                </span>
+          <mat-card-content>
+            <div class="flex align-center justify-between">
+              <div>
+                <div class="kpi-label">Completed Tasks</div>
+                <div class="kpi-value text-success" style="font-size: 2.25rem; font-weight: 800; color: #10b981;">
+                  {{ summary().completedTasks }}
+                </div>
+              </div>
+              <div class="kpi-icon-bg bg-success-light">
+                <span class="material-symbols-rounded">task_alt</span>
               </div>
             </div>
-            <div class="kpi-icon-bg bg-success-light text-success">
-              <span class="material-symbols-rounded">task_alt</span>
+            <div class="kpi-footer mt-12" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+              <span class="material-symbols-rounded" style="font-size: 14px; color: var(--success); vertical-align: middle;">done_all</span>
+              <span><strong>{{ summary().completedOnTime }}</strong> on-time</span>
             </div>
           </mat-card-content>
         </mat-card>
 
         <!-- Card 3: Overdue Tasks -->
         <mat-card class="glass-card kpi-card">
-          <mat-card-content class="flex align-center justify-between">
-            <div>
-              <div class="kpi-label">Overdue Tasks</div>
-              <div class="kpi-value text-danger">{{ summary().overdueTasks }}</div>
+          <mat-card-content>
+            <div class="flex align-center justify-between">
+              <div>
+                <div class="kpi-label">Overdue Tasks</div>
+                <div class="kpi-value text-danger" style="font-size: 2.25rem; font-weight: 800; color: #ef4444;">
+                  {{ summary().overdueTasks }}
+                </div>
+              </div>
+              <div class="kpi-icon-bg bg-danger-light">
+                <span class="material-symbols-rounded">event_busy</span>
+              </div>
             </div>
-            <div class="kpi-icon-bg bg-danger-light text-danger">
-              <span class="material-symbols-rounded">event_busy</span>
+            <div class="kpi-footer mt-12" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+              <span class="material-symbols-rounded" style="font-size: 14px; color: {{ summary().overdueTasks > 0 ? '#ef4444' : 'var(--text-muted)' }}; vertical-align: middle;">info</span>
+              <span>Needs attention</span>
             </div>
           </mat-card-content>
         </mat-card>
 
         <!-- Card 4: Completion Rate -->
         <mat-card class="glass-card kpi-card">
-          <mat-card-content class="flex align-center justify-between">
-            <div>
-              <div class="kpi-label">Completion Rate</div>
-              <div class="kpi-value text-secondary">{{ summary().completionRate }}%</div>
+          <mat-card-content>
+            <div class="flex align-center justify-between">
+              <div>
+                <div class="kpi-label">Completion Rate</div>
+                <div class="kpi-value text-secondary" style="font-size: 2.25rem; font-weight: 800; color: #8b5cf6;">
+                  {{ summary().completionRate }}%
+                </div>
+              </div>
+              <div class="kpi-progress-circle" style="position: relative; width: 48px; height: 48px;">
+                <svg width="48" height="48" viewBox="0 0 36 36" class="circular-chart" style="transform: rotate(-90deg);">
+                  <path class="circle-bg" stroke="#f1f5f9" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path class="circle" [attr.stroke-dasharray]="summary().completionRate + ', 100'" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="transition: stroke-dasharray 0.5s ease;" />
+                </svg>
+              </div>
             </div>
-            <div class="kpi-progress-circle">
-              <svg width="48" height="48" viewBox="0 0 36 36" class="circular-chart">
-                <path class="circle-bg" stroke="#e2e8f0" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="circle" [attr.stroke-dasharray]="summary().completionRate + ', 100'" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              </svg>
+            <div class="kpi-footer mt-12" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+              <span class="material-symbols-rounded" style="font-size: 14px; color: #8b5cf6; vertical-align: middle;">trending_up</span>
+              <span>Based on total tasks ratio</span>
             </div>
           </mat-card-content>
         </mat-card>
@@ -596,20 +641,71 @@ import { HttpClient } from '@angular/common/http';
       color: var(--primary);
     }
 
-    /* Filters Box */
+    /* Filters Box Custom Styling */
     .filters-card {
       border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.8) !important;
+      backdrop-filter: var(--backdrop-blur);
     }
     .filter-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
     }
     .filter-item {
       width: 100%;
     }
-    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    
+    /* Material fields styling overrides */
+    ::ng-deep .filters-card .mat-mdc-text-field-wrapper {
+      background-color: rgba(248, 250, 252, 0.6) !important;
+      border-radius: 12px !important;
+      transition: all var(--transition-fast) !important;
+    }
+    ::ng-deep .filters-card .mat-mdc-text-field-wrapper:hover {
+      background-color: rgba(255, 255, 255, 0.9) !important;
+    }
+    ::ng-deep .filters-card .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
+      background-color: #ffffff !important;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+    }
+    
+    /* Correctly style outline borders to prevent floating label overlap */
+    ::ng-deep .filters-card .mdc-notched-outline__leading,
+    ::ng-deep .filters-card .mdc-notched-outline__notch,
+    ::ng-deep .filters-card .mdc-notched-outline__trailing {
+      border-color: var(--border) !important;
+      transition: border-color var(--transition-fast) !important;
+    }
+    ::ng-deep .filters-card .mdc-notched-outline__leading {
+      border-top-left-radius: 12px !important;
+      border-bottom-left-radius: 12px !important;
+    }
+    ::ng-deep .filters-card .mdc-notched-outline__trailing {
+      border-top-right-radius: 12px !important;
+      border-bottom-right-radius: 12px !important;
+    }
+    
+    /* Hover and focus states on outline borders */
+    ::ng-deep .filters-card .mat-mdc-form-field-flex:hover .mdc-notched-outline__leading,
+    ::ng-deep .filters-card .mat-mdc-form-field-flex:hover .mdc-notched-outline__notch,
+    ::ng-deep .filters-card .mat-mdc-form-field-flex:hover .mdc-notched-outline__trailing {
+      border-color: #cbd5e1 !important;
+    }
+    ::ng-deep .filters-card .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+    ::ng-deep .filters-card .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+    ::ng-deep .filters-card .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+      border-color: var(--primary) !important;
+      border-width: 2px !important;
+    }
+    
+    ::ng-deep .filters-card .mat-mdc-form-field-subscript-wrapper {
       display: none !important;
+    }
+    ::ng-deep .filters-card .mat-mdc-form-field-prefix {
+      display: inline-flex;
+      align-items: center;
+      align-self: center;
     }
 
     /* Error banner */
@@ -635,45 +731,69 @@ import { HttpClient } from '@angular/common/http';
       margin: 0;
     }
 
-    /* KPI Grid */
+    /* KPI Grid Custom Styling */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
     }
     .kpi-card {
-      padding: 20px;
+      padding: 20px 24px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.85) !important;
+      transition: all var(--transition-normal) !important;
+      cursor: pointer;
+    }
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.12), var(--shadow-lg) !important;
+      border-color: rgba(99, 102, 241, 0.25) !important;
     }
     .kpi-label {
-      font-size: 0.85rem;
-      font-weight: 500;
+      font-size: 0.75rem;
+      font-weight: 600;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
     }
     .kpi-value {
-      font-size: 1.75rem;
-      font-weight: 700;
-      line-height: 1.1;
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
+      line-height: 1;
     }
     .kpi-icon-bg {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+      transition: all var(--transition-normal);
     }
-    .bg-primary-light { background-color: var(--primary-light); }
-    .bg-success-light { background-color: var(--success-bg); }
-    .bg-danger-light { background-color: var(--danger-bg); }
+    .kpi-card:hover .kpi-icon-bg {
+      transform: scale(1.08) rotate(3deg);
+    }
+    
+    .bg-primary-light {
+      background-color: #f5f3ff !important;
+      color: #7c3aed !important;
+    }
+    .bg-success-light {
+      background-color: #ecfdf5 !important;
+      color: #10b981 !important;
+    }
+    .bg-danger-light {
+      background-color: #fef2f2 !important;
+      color: #ef4444 !important;
+    }
 
+    .kpi-progress-circle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .circular-chart {
-      display: block;
-      margin: 0 auto;
       max-height: 48px;
     }
     .circle-bg {
@@ -1270,5 +1390,19 @@ export class Reports implements OnInit, AfterViewInit {
       case 'Critical': return '#7f1d1d'; // Dark Red
       default: return '#94a3b8';
     }
+  }
+
+  resetFilters() {
+    this.filters = {
+      projectId: null,
+      assigneeId: null,
+      status: null,
+      priority: null,
+      dateFrom: null,
+      dateTo: null
+    };
+    this.dynamicFieldFilters = {};
+    this.assignees.set(this.allUsers());
+    this.refreshReports();
   }
 }
