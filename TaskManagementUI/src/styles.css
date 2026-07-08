@@ -681,3 +681,53 @@ a:hover {
 .tooltip-detail span {
   font-weight: 600;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVENESS AND UTILITIES
+   ========================================== */
+
+/* Hiding / Showing columns and elements */
+.show-mobile {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: inline-flex !important;
+  }
+  div.show-mobile, p.show-mobile, span.show-mobile {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Reduce content padding on mobile */
+  .content-container {
+    padding: 16px !important;
+  }
+  
+  /* Make modals fill 95% on mobile */
+  .modal-container {
+    width: 95% !important;
+    max-width: 100% !important;
+    margin: 10px;
+    border-radius: 12px !important;
+  }
+  
+  .modal-body {
+    padding: 16px !important;
+  }
+  
+  .modal-footer {
+    padding: 12px 16px !important;
+  }
+  
+  /* Make form group elements stack nicely */
+  .form-group {
+    margin-bottom: 16px !important;
+  }
+}
+

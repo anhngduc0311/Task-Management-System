@@ -11,32 +11,37 @@ import { Avatar } from './avatar';
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, Avatar],
   template: `
     <div class="layout-container">
+      <!-- Mobile Sidebar Overlay Backdrop -->
+      @if (sidebarOpen()) {
+        <div class="sidebar-overlay animate-fade-in" (click)="closeSidebar()"></div>
+      }
+
       <!-- Sidebar -->
-      <aside class="sidebar">
+      <aside class="sidebar" [class.open]="sidebarOpen()">
         <div class="brand">
           <span class="material-symbols-rounded logo-icon">blur_on</span>
           <span class="brand-name">Taskly</span>
         </div>
 
         <nav class="nav-links">
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+          <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
             <span class="material-symbols-rounded">dashboard</span>
             <span>Dashboard</span>
           </a>
-          <a routerLink="/my-tasks" routerLinkActive="active" class="nav-item">
+          <a routerLink="/my-tasks" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
             <span class="material-symbols-rounded">task_alt</span>
             <span>My Tasks</span>
           </a>
-          <a routerLink="/projects" routerLinkActive="active" class="nav-item">
+          <a routerLink="/projects" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
             <span class="material-symbols-rounded">folder_open</span>
             <span>Projects</span>
           </a>
-          <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+          <a routerLink="/reports" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
             <span class="material-symbols-rounded">bar_chart</span>
             <span>Reports</span>
           </a>
           @if (isAdmin()) {
-            <a routerLink="/users" routerLinkActive="active" class="nav-item">
+            <a routerLink="/users" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
               <span class="material-symbols-rounded">group</span>
               <span>Users</span>
             </a>
@@ -60,7 +65,10 @@ import { Avatar } from './avatar';
       <!-- Main Panel -->
       <main class="main-panel">
         <header class="header">
-          <div class="header-left">
+          <div class="header-left" style="display: flex; align-items: center; gap: 12px;">
+            <button class="hamburger-btn" (click)="toggleSidebar()" title="Toggle Menu">
+              <span class="material-symbols-rounded">menu</span>
+            </button>
             <h2 class="page-title">{{ getPageTitle() }}</h2>
           </div>
           <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
@@ -189,6 +197,7 @@ import { Avatar } from './avatar';
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 130px;
     }
     .user-role {
       font-size: 0.75rem;
@@ -196,6 +205,7 @@ import { Avatar } from './avatar';
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 130px;
     }
     .logout-btn {
       background: none;
@@ -247,6 +257,63 @@ import { Avatar } from './avatar';
       overflow-y: auto;
       min-height: 0;
     }
+
+    /* Hamburger Menu Button */
+    .hamburger-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition-fast);
+    }
+    .hamburger-btn:hover {
+      background-color: #f1f5f9;
+    }
+    .hamburger-btn span {
+      font-size: 24px;
+    }
+
+    /* Mobile Responsive Sidebar Styles */
+    @media (max-width: 768px) {
+      .hamburger-btn {
+        display: inline-flex;
+      }
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1010;
+        transform: translateX(-100%);
+        transition: transform var(--transition-normal);
+        box-shadow: var(--shadow-lg);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(15, 23, 42, 0.3);
+        backdrop-filter: blur(4px);
+        z-index: 1005;
+      }
+      .header {
+        padding: 0 16px !important;
+        height: 60px !important;
+      }
+      .welcome-text {
+        display: none !important;
+      }
+    }
   `]
 })
 export class MainLayout {
@@ -255,6 +322,15 @@ export class MainLayout {
   private readonly router = inject(Router);
 
   protected showQuickMenu = signal(false);
+  protected sidebarOpen = signal(false);
+
+  toggleSidebar() {
+    this.sidebarOpen.set(!this.sidebarOpen());
+  }
+
+  closeSidebar() {
+    this.sidebarOpen.set(false);
+  }
 
   toggleQuickMenu() {
     this.showQuickMenu.set(!this.showQuickMenu());
@@ -267,11 +343,13 @@ export class MainLayout {
 
   quickCreateProject() {
     this.showQuickMenu.set(false);
+    this.closeSidebar();
     this.router.navigate(['/projects'], { queryParams: { create: 'true' } });
   }
 
   quickCreateTask() {
     this.showQuickMenu.set(false);
+    this.closeSidebar();
     const url = this.router.url;
     // Check if we are currently on a project details page
     const projectMatch = url.match(/^\/projects\/([a-f0-9-]{36})/i);
@@ -322,3 +400,4 @@ export class MainLayout {
     });
   }
 }
+

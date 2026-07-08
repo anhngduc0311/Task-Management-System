@@ -380,11 +380,11 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                     <thead>
                       <tr>
                         <th>Task Title</th>
-                        <th>Parent Task</th>
-                        <th>Assignee</th>
+                        <th class="hide-mobile">Parent Task</th>
+                        <th class="hide-mobile">Assignee</th>
                         <th>Priority</th>
                         <th>Status</th>
-                        <th>Due Date</th>
+                        <th class="hide-mobile">Due Date</th>
                         <th class="text-right">Actions</th>
                       </tr>
                     </thead>
@@ -400,8 +400,29 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                           <tr class="clickable-row" (click)="openTaskDetails(task.id)">
                             <td>
                               <div class="task-title-cell" style="font-weight: 600;">{{ task.title }}</div>
+                              <!-- Inline mobile metadata -->
+                              <div class="mobile-only-meta show-mobile mt-4" style="display: none; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                                @if (task.parentTaskTitle) {
+                                  <span style="background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;">
+                                    <span class="material-symbols-rounded" style="font-size: 10px;">subdirectory_arrow_right</span>
+                                    {{ task.parentTaskTitle }}
+                                  </span>
+                                }
+                                @if (task.assigneeName) {
+                                  <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <app-avatar [name]="task.assigneeName" [size]="16"></app-avatar>
+                                    {{ task.assigneeName }}
+                                  </span>
+                                }
+                                @if (task.dueDate) {
+                                  <span [ngClass]="{ 'overdue': isOverdue(task.dueDate) && task.status !== 'Done' }" style="display: inline-flex; align-items: center; gap: 2px;">
+                                    <span class="material-symbols-rounded" style="font-size: 12px;">calendar_month</span>
+                                    {{ task.dueDate | date:'shortDate' }}
+                                  </span>
+                                }
+                              </div>
                             </td>
-                            <td>
+                            <td class="hide-mobile">
                               @if (task.parentTaskTitle) {
                                 <span class="badge badge-status-todo" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem;">
                                   <span class="material-symbols-rounded" style="font-size: 14px;">subdirectory_arrow_right</span>
@@ -411,7 +432,7 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                                 <span class="text-light">-</span>
                               }
                             </td>
-                            <td>
+                            <td class="hide-mobile">
                               <div class="flex align-center gap-8">
                                 <app-avatar [name]="task.assigneeName || 'Unassigned'" [size]="24"></app-avatar>
                                 <span style="font-size: 0.85rem;">{{ task.assigneeName || 'Unassigned' }}</span>
@@ -427,7 +448,7 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                                 {{ getStatusLabel(task.status) }}
                               </span>
                             </td>
-                            <td>
+                            <td class="hide-mobile">
                               @if (task.dueDate) {
                                 <span style="font-size: 0.85rem;" [ngClass]="{ 'overdue': isOverdue(task.dueDate) && task.status !== 'Done' }">
                                   {{ task.dueDate | date:'mediumDate' }}
@@ -1235,6 +1256,13 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
       gap: 8px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 2px;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tabs-container::-webkit-scrollbar {
+      display: none;
     }
     .tab-btn {
       padding: 10px 18px;
@@ -1249,6 +1277,7 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
       align-items: center;
       gap: 8px;
       transition: all var(--transition-fast);
+      flex-shrink: 0;
     }
     .tab-btn span {
       font-size: 20px;
@@ -1280,6 +1309,16 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
     @media (max-width: 768px) {
       .kanban-board {
         grid-template-columns: 1fr;
+      }
+      .filters-left {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .search-input, .filters-left select, .filters-left button {
+        width: 100% !important;
+        min-width: 0 !important;
       }
     }
     .kanban-col {

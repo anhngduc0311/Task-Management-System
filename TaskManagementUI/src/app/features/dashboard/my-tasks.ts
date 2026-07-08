@@ -47,9 +47,9 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
           <table class="responsive-table">
             <thead>
               <tr>
-                <th>Project</th>
+                <th class="hide-mobile">Project</th>
                 <th>Task Title</th>
-                <th>Priority</th>
+                <th class="hide-mobile">Priority</th>
                 <th>Status</th>
                 <th>Due Date</th>
               </tr>
@@ -64,17 +64,27 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
               } @else {
                 @for (task of filteredTasks(); track task.id) {
                   <tr (click)="openTaskDetails(task.id)" class="clickable-row animate-fade-in-up">
-                    <td class="project-col">
+                    <td class="project-col hide-mobile">
                       <span class="material-symbols-rounded">folder_open</span>
                       {{ task.projectName }}
                     </td>
                     <td>
                       <div class="task-title-cell">{{ task.title }}</div>
+                      <!-- Inline mobile metadata -->
+                      <div class="mobile-only-meta show-mobile mt-4" style="display: none; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                        <span style="display: inline-flex; align-items: center; gap: 2px;">
+                          <span class="material-symbols-rounded" style="font-size: 14px;">folder_open</span>
+                          {{ task.projectName }}
+                        </span>
+                        <span class="badge" [ngClass]="'badge-priority-' + task.priority.toLowerCase()" style="padding: 2px 6px; font-size: 0.65rem;">
+                          {{ task.priority }}
+                        </span>
+                      </div>
                       @if (task.description) {
                         <div class="task-desc-cell">{{ task.description }}</div>
                       }
                     </td>
-                    <td>
+                    <td class="hide-mobile">
                       <span class="badge" [ngClass]="'badge-priority-' + task.priority.toLowerCase()">
                         {{ task.priority }}
                       </span>
@@ -157,6 +167,17 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
     .py-24 {
       padding-top: 24px;
       padding-bottom: 24px;
+    }
+    @media (max-width: 768px) {
+      .filters-left {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .search-input, .status-select, .priority-select {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
     }
   `]
 })

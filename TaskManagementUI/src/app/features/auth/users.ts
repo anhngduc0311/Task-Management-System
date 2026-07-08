@@ -32,7 +32,7 @@ import { Avatar } from '../../shared/components/avatar';
             <thead>
               <tr>
                 <th>User Details</th>
-                <th>Email Address</th>
+                <th class="hide-mobile">Email Address</th>
                 <th>System Status</th>
                 <th>Actions</th>
               </tr>
@@ -52,11 +52,14 @@ import { Avatar } from '../../shared/components/avatar';
                         <app-avatar [name]="u.fullName" [avatarUrl]="u.avatarUrl" [size]="36"></app-avatar>
                         <div>
                           <strong>{{ u.fullName }}</strong>
-                          <div class="user-id-text">ID: {{ u.id }}</div>
+                          <div class="mobile-only-meta show-mobile mt-4" style="display: none; font-size: 0.75rem; color: var(--text-muted);">
+                            {{ u.email }}
+                          </div>
+                          <div class="user-id-text hide-mobile">ID: {{ u.id }}</div>
                         </div>
                       </div>
                     </td>
-                    <td>{{ u.email }}</td>
+                    <td class="hide-mobile">{{ u.email }}</td>
                     <td>
                       <span class="badge" [ngClass]="u.status === 'Active' ? 'badge-status-done' : 'badge-status-cancelled'">
                         {{ u.status }}
@@ -117,6 +120,12 @@ import { Avatar } from '../../shared/components/avatar';
       font-size: 0.9rem;
       font-weight: 500;
       color: var(--text-muted);
+    }
+    @media (max-width: 768px) {
+      .search-input {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
     }
   `]
 })
