@@ -1253,7 +1253,7 @@ export class Reports implements OnInit, AfterViewInit {
   }
 
   private loadProjectDynamicFields(projectId: string) {
-    this.http.get<any[]>(`http://localhost:5035/api/projects/${projectId}/dynamic-fields`).subscribe({
+    this.http.get<any[]>(`/api/projects/${projectId}/dynamic-fields`).subscribe({
       next: (fields) => {
         this.dynamicFieldsList.set(fields || []);
       },

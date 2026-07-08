@@ -46,7 +46,7 @@ echo "🔹 Cấu hình Nginx Reverse Proxy..."
 cat << 'EOF' > TaskManagementUI/nginx.conf
 server {
     listen 80;
-    server_name localhost;
+    server_name anhnguyen.click www.anhnguyen.click localhost;
 
     location / {
         root /usr/share/nginx/html;
@@ -154,8 +154,8 @@ echo ""
 echo "================================================================="
 echo "   🎉 HỆ THỐNG ĐÃ ĐƯỢC TRIỂN KHAI VÀ KHỞI CHẠY THÀNH CÔNG 🎉   "
 echo "================================================================="
-echo "  - Địa chỉ Website: http://13.207.203.108"
-echo "  - Cổng API Backend: http://13.207.203.108/api"
+echo "  - Địa chỉ Website: https://anhnguyen.click (hoặc http://13.207.203.108)"
+echo "  - Cổng API Backend: https://anhnguyen.click/api (hoặc http://13.207.203.108/api)"
 echo "  - Kiểm tra trạng thái: docker compose ps"
 echo "  - Xem logs: docker compose logs -f"
 echo "================================================================="
