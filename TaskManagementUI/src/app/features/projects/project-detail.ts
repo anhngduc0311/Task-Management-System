@@ -2190,9 +2190,14 @@ export class ProjectDetail implements OnInit {
     switch (log.action) {
       case 'ProjectCreated':
         friendlyDescription = `created the ${entityName}`;
+        oldValueFormatted = null;
+        newValueFormatted = null;
         break;
       case 'ProjectUpdated':
         friendlyDescription = `updated ${entityName} details`;
+        const pDiff = this.parseAndDiff(log.oldValue, log.newValue, this.members(), this.tasks());
+        oldValueFormatted = pDiff.oldValueFormatted;
+        newValueFormatted = pDiff.newValueFormatted;
         break;
       case 'ProjectMemberAdded':
         friendlyDescription = `added ${entityName} to the project`;
@@ -2209,9 +2214,14 @@ export class ProjectDetail implements OnInit {
         break;
       case 'TaskCreated':
         friendlyDescription = `created ${entityName}`;
+        oldValueFormatted = null;
+        newValueFormatted = null;
         break;
       case 'TaskUpdated':
         friendlyDescription = `updated details of ${entityName}`;
+        const tDiff = this.parseAndDiff(log.oldValue, log.newValue, this.members(), this.tasks());
+        oldValueFormatted = tDiff.oldValueFormatted;
+        newValueFormatted = tDiff.newValueFormatted;
         break;
       case 'TaskDeleted':
         friendlyDescription = `deleted ${entityName}`;
@@ -2263,6 +2273,93 @@ export class ProjectDetail implements OnInit {
       oldValueFormatted,
       newValueFormatted
     };
+  }
+
+  getUserName(userId: string, members: any[]): string {
+    if (!userId) return 'Unassigned';
+    const m = (members || []).find((x: any) => x.userId === userId || x.id === userId);
+    return m ? m.fullName : 'Unassigned';
+  }
+
+  getTaskTitle(taskId: string, tasks: any[]): string {
+    if (!taskId) return 'None';
+    const t = (tasks || []).find((x: any) => x.id === taskId);
+    return t ? t.title : 'None';
+  }
+
+  parseAndDiff(oldValStr: string, newValStr: string, projectMembers: any[], tasks: any[]): { oldValueFormatted: string | null, newValueFormatted: string | null } {
+    if (!oldValStr || !newValStr) {
+      return { oldValueFormatted: oldValStr, newValueFormatted: newValStr };
+    }
+    try {
+      const isOldJson = oldValStr.trim().startsWith('{') && oldValStr.trim().endsWith('}');
+      const isNewJson = newValStr.trim().startsWith('{') && newValStr.trim().endsWith('}');
+      if (isOldJson && isNewJson) {
+        const oldObj = JSON.parse(oldValStr);
+        const newObj = JSON.parse(newValStr);
+        
+        const oldChanges: string[] = [];
+        const newChanges: string[] = [];
+        
+        const keys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)]));
+        for (const key of keys) {
+          if (key === 'DynamicValues') {
+            const oldDyn = oldObj[key] || {};
+            const newDyn = newObj[key] || {};
+            const dynKeys = Array.from(new Set([...Object.keys(oldDyn), ...Object.keys(newDyn)]));
+            for (const dk of dynKeys) {
+              const ov = oldDyn[dk];
+              const nv = newDyn[dk];
+              if (ov !== nv) {
+                oldChanges.push(`${dk}: "${ov || 'None'}"`);
+                newChanges.push(`${dk}: "${nv || 'None'}"`);
+              }
+            }
+            continue;
+          }
+          
+          const ov = oldObj[key];
+          const nv = newObj[key];
+          
+          if (JSON.stringify(ov) !== JSON.stringify(nv)) {
+            let label = key;
+            let ovFormatted = ov;
+            let nvFormatted = nv;
+            
+            if (key === 'AssigneeId') {
+              label = 'Assignee';
+              ovFormatted = this.getUserName(ov, projectMembers);
+              nvFormatted = this.getUserName(nv, projectMembers);
+            } else if (key === 'ParentTaskId') {
+              label = 'Parent Task';
+              ovFormatted = this.getTaskTitle(ov, tasks);
+              nvFormatted = this.getTaskTitle(nv, tasks);
+            } else if (key === 'DueDate') {
+              label = 'Due Date';
+              ovFormatted = ov ? new Date(ov).toLocaleDateString() : 'None';
+              nvFormatted = nv ? new Date(nv).toLocaleDateString() : 'None';
+            } else if (key === 'Status') {
+              ovFormatted = this.formatStatus(ov);
+              nvFormatted = this.formatStatus(nv);
+            }
+            
+            const ovString = (ovFormatted !== null && ovFormatted !== undefined && ovFormatted !== '') ? `"${ovFormatted}"` : 'None';
+            const nvString = (nvFormatted !== null && nvFormatted !== undefined && nvFormatted !== '') ? `"${nvFormatted}"` : 'None';
+            
+            oldChanges.push(`${label}: ${ovString}`);
+            newChanges.push(`${label}: ${nvString}`);
+          }
+        }
+        
+        return {
+          oldValueFormatted: oldChanges.length > 0 ? oldChanges.join(', ') : null,
+          newValueFormatted: newChanges.length > 0 ? newChanges.join(', ') : null
+        };
+      }
+    } catch (e) {
+      // ignore
+    }
+    return { oldValueFormatted: oldValStr, newValueFormatted: newValStr };
   }
 
   formatStatus(status: string): string {
