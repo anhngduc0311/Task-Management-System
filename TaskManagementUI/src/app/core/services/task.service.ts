@@ -22,6 +22,10 @@ export class TaskService {
     return this.http.get<any>(`${this.baseUrl}/projects/${projectId}/tasks`, { params });
   }
 
+  getProjectTasksAdvanced(projectId: string, filter: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/projects/${projectId}/tasks/advanced`, filter);
+  }
+
   createTask(projectId: string, data: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/projects/${projectId}/tasks`, data);
   }

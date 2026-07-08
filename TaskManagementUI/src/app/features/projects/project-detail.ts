@@ -99,8 +99,10 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                   placeholder="Search tasks..." 
                   [(ngModel)]="taskFilters.search"
                   (input)="onTaskFilterChange()"
+                  [disabled]="advancedFilterActive()"
+                  [style.opacity]="advancedFilterActive() ? 0.5 : 1"
                 />
-                <select class="form-select" [(ngModel)]="taskFilters.status" (change)="onTaskFilterChange()">
+                <select class="form-select" [(ngModel)]="taskFilters.status" (change)="onTaskFilterChange()" [disabled]="advancedFilterActive()" [style.opacity]="advancedFilterActive() ? 0.5 : 1">
                   <option value="">All Statuses</option>
                   <option value="Todo">Todo</option>
                   <option value="InProgress">In Progress</option>
@@ -108,13 +110,23 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                   <option value="Done">Done</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
-                <select class="form-select" [(ngModel)]="taskFilters.priority" (change)="onTaskFilterChange()">
+                <select class="form-select" [(ngModel)]="taskFilters.priority" (change)="onTaskFilterChange()" [disabled]="advancedFilterActive()" [style.opacity]="advancedFilterActive() ? 0.5 : 1">
                   <option value="">All Priorities</option>
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
                   <option value="Critical">Critical</option>
                 </select>
+                <button 
+                  type="button" 
+                  class="btn"
+                  [ngClass]="showAdvancedFilter() ? 'btn-primary' : 'btn-outline'"
+                  (click)="showAdvancedFilter.set(!showAdvancedFilter())"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; height: 38px; border-radius: 8px; font-size: 0.85rem;"
+                >
+                  <span class="material-symbols-rounded" style="font-size: 18px;">tune</span>
+                  Advanced Filter
+                </button>
               </div>
               
               <div class="flex align-center gap-12 flex-wrap">
@@ -150,6 +162,133 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
                 }
               </div>
             </div>
+
+            <!-- Advanced Filter Builder Panel -->
+            @if (showAdvancedFilter()) {
+              <div class="glass-card mb-24 advanced-filter-panel animate-fade-in" style="padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <div class="panel-header flex justify-between align-center mb-16" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+                  <h4 style="margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-main); font-size: 1rem;">
+                    <span class="material-symbols-rounded text-primary" style="font-size: 20px;">tune</span>
+                    Advanced Filter Builder
+                  </h4>
+                  <div class="operator-select flex align-center gap-8">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Match logic:</span>
+                    <div class="toggle-group flex p-4 rounded-8" style="background-color: #f1f5f9; gap: 4px; display: inline-flex;">
+                      <button 
+                        type="button"
+                        class="btn btn-sm btn-text" 
+                        [ngClass]="{ 'active-toggle': advancedFilterData.operator === 'AND' }"
+                        (click)="advancedFilterData.operator = 'AND'"
+                        style="padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px;"
+                      >
+                        AND
+                      </button>
+                      <button 
+                        type="button"
+                        class="btn btn-sm btn-text" 
+                        [ngClass]="{ 'active-toggle': advancedFilterData.operator === 'OR' }"
+                        (click)="advancedFilterData.operator = 'OR'"
+                        style="padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px;"
+                      >
+                        OR
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Rules List -->
+                <div class="rules-list mb-16" style="display: flex; flex-direction: column; gap: 12px;">
+                  @if (advancedFilterData.rules.length === 0) {
+                    <div class="empty-rules p-16 text-center text-muted" style="border: 1px dashed var(--border); border-radius: 8px; padding: 20px; font-size: 0.85rem; background-color: #f8fafc;">
+                      No filter conditions added yet. Click "+ Add Condition" to start.
+                    </div>
+                  }
+                  
+                  @for (rule of advancedFilterData.rules; track $index) {
+                    <div class="rule-row flex align-center gap-12 flex-wrap" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                      <!-- Field Dropdown -->
+                      <select class="form-select field-select" [(ngModel)]="rule.field" (change)="onFilterFieldChange(rule)" style="min-width: 160px; height: 38px;">
+                        @for (f of getAvailableFields(); track f.key) {
+                          <option [value]="f.key">{{ f.name }}</option>
+                        }
+                      </select>
+
+                      <!-- Operator Dropdown -->
+                      <select class="form-select op-select" [(ngModel)]="rule.operator" style="min-width: 140px; height: 38px;">
+                        @for (op of getOperatorsForField(rule.field); track op.value) {
+                          <option [value]="op.value">{{ op.name }}</option>
+                        }
+                      </select>
+
+                      <!-- Value Input (conditional based on field type and operator) -->
+                      <div class="value-input-container flex" style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px;">
+                        @if (rule.operator === 'Between') {
+                          <input type="date" class="form-input val-input" [(ngModel)]="rule.value" style="height: 38px; flex: 1;" />
+                          <span class="text-muted" style="font-size: 0.85rem;">and</span>
+                          <input type="date" class="form-input val-input" [(ngModel)]="rule.valueTo" style="height: 38px; flex: 1;" />
+                        } @else if (getFieldType(rule.field) === 'Status' || getFieldType(rule.field) === 'Priority' || getFieldType(rule.field) === 'Assignee' || getFieldType(rule.field) === 'Select') {
+                          <select class="form-select val-input" [(ngModel)]="rule.value" style="height: 38px; width: 100%;">
+                            <option value="">Select option...</option>
+                            @for (opt of getFieldOptions(rule.field); track opt.value) {
+                              <option [value]="opt.value">{{ opt.name }}</option>
+                            }
+                          </select>
+                        } @else if (getFieldType(rule.field) === 'Boolean') {
+                          <select class="form-select val-input" [(ngModel)]="rule.value" style="height: 38px; width: 100%;">
+                            <option value="true">True / Yes</option>
+                            <option value="false">False / No</option>
+                          </select>
+                        } @else if (getFieldType(rule.field) === 'Date') {
+                          <input type="date" class="form-input val-input" [(ngModel)]="rule.value" style="height: 38px; width: 100%;" />
+                        } @else if (getFieldType(rule.field) === 'Number') {
+                          <input type="number" class="form-input val-input" [(ngModel)]="rule.value" placeholder="Enter number..." style="height: 38px; width: 100%;" />
+                        } @else {
+                          <input type="text" class="form-input val-input" [(ngModel)]="rule.value" placeholder="Enter text filter..." style="height: 38px; width: 100%;" />
+                        }
+                      </div>
+
+                      <!-- Remove Rule Button -->
+                      <button type="button" class="btn btn-text text-danger btn-icon-only flex align-center justify-center" (click)="removeAdvancedFilterRule($index)" title="Remove condition" style="padding: 0; min-width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; cursor: pointer; color: var(--danger); hover: background-color: #fee2e2;">
+                        <span class="material-symbols-rounded" style="font-size: 20px;">delete</span>
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-between align-center flex-wrap gap-12 mt-16 pt-16" style="border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-top: 16px;">
+                  <button type="button" class="btn btn-outline btn-sm flex align-center gap-6" (click)="addAdvancedFilterRule()" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;">
+                    <span class="material-symbols-rounded" style="font-size: 16px;">add</span>
+                    Add Condition
+                  </button>
+                  <div class="flex gap-12" style="display: flex; gap: 12px;">
+                    <button type="button" class="btn btn-text btn-sm" (click)="clearAdvancedFilter()" [disabled]="!advancedFilterActive() && advancedFilterData.rules.length === 0" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;">
+                      Reset
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm flex align-center gap-6" (click)="applyAdvancedFilter()" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;">
+                      <span class="material-symbols-rounded" style="font-size: 16px;">check</span>
+                      Apply Filter
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Filter Status Banner -->
+            @if (advancedFilterActive()) {
+              <div class="filter-status-banner mb-24 flex justify-between align-center animate-fade-in" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div class="flex align-center gap-8" style="display: flex; align-items: center; gap: 8px;">
+                  <span class="material-symbols-rounded text-primary" style="font-size: 20px; color: #2563eb;">filter_alt</span>
+                  <span style="font-weight: 600; font-size: 0.9rem; color: #1e3a8a;">Advanced Filter is active:</span>
+                  <span class="badge badge-info" style="background-color: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                    {{ advancedFilterData.operator }} logic ({{ advancedFilterData.rules.filter(r => r.field && r.value !== undefined && r.value !== '').length }} conditions)
+                  </span>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" (click)="clearAdvancedFilter()" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; border: 1px solid #3b82f6; color: #2563eb; background-color: white; cursor: pointer; font-weight: 500;">
+                  Clear Filter
+                </button>
+              </div>
+            }
 
             <!-- Kanban Board -->
             @if (viewMode() === 'kanban') {
@@ -1374,6 +1513,63 @@ import { TaskDetailModal } from '../tasks/task-detail-modal';
     .clickable-row:hover {
       background-color: #f8fafc;
     }
+
+    /* Advanced Filter Builder Styling */
+    .advanced-filter-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-normal) ease;
+    }
+    .rule-row {
+      animation: slideIn var(--transition-fast) ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .btn-toggle-sm {
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all var(--transition-fast);
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+    .btn-toggle-sm:hover {
+      color: var(--text-main);
+    }
+    .rule-row select.form-select, .rule-row input.form-input {
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      transition: all var(--transition-fast);
+      outline: none;
+    }
+    .rule-row select.form-select:focus, .rule-row input.form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .rule-row select.form-select:hover, .rule-row input.form-input:hover {
+      border-color: #cbd5e1;
+    }
+    .filter-status-banner {
+      box-shadow: var(--shadow-sm);
+    }
   `]
 })
 export class ProjectDetail implements OnInit {
@@ -1434,6 +1630,152 @@ export class ProjectDetail implements OnInit {
     page: 1,
     pageSize: 100 // Load all in board view
   };
+
+  // Advanced Filters
+  protected showAdvancedFilter = signal(false);
+  protected advancedFilterActive = signal(false);
+  protected advancedFilterData = {
+    operator: 'AND',
+    rules: [] as any[]
+  };
+
+  protected getAvailableFields() {
+    const fields = [
+      { key: 'Title', name: 'Task Title', type: 'Text' },
+      { key: 'Description', name: 'Description', type: 'Text' },
+      { key: 'Status', name: 'Status', type: 'Status' },
+      { key: 'Priority', name: 'Priority', type: 'Priority' },
+      { key: 'AssigneeId', name: 'Assignee', type: 'Assignee' },
+      { key: 'DueDate', name: 'Due Date', type: 'Date' },
+      { key: 'CreatedAt', name: 'Created Date', type: 'Date' }
+    ];
+
+    // Add dynamic fields
+    const dfs = this.dynamicFields() || [];
+    dfs.forEach(f => {
+      fields.push({
+        key: f.fieldKey,
+        name: f.fieldName + ' (Custom)',
+        type: f.fieldType // Text, Number, Date, Boolean, Select, MultiSelect
+      });
+    });
+
+    return fields;
+  }
+
+  protected getOperatorsForField(fieldKey: string) {
+    if (!fieldKey) return [];
+    const fields = this.getAvailableFields();
+    const field = fields.find(f => f.key === fieldKey);
+    if (!field) return [];
+
+    switch (field.type) {
+      case 'Text':
+        return [
+          { value: 'Contains', name: 'Contains' },
+          { value: 'Equals', name: 'Equals' },
+          { value: 'NotEquals', name: 'Not Equals' }
+        ];
+      case 'Number':
+      case 'Date':
+        return [
+          { value: 'Equals', name: 'Equals' },
+          { value: 'NotEquals', name: 'Not Equals' },
+          { value: 'GreaterThan', name: 'Greater Than' },
+          { value: 'LessThan', name: 'Less Than' },
+          { value: 'Between', name: 'Between' }
+        ];
+      case 'Status':
+      case 'Priority':
+      case 'Assignee':
+      case 'Boolean':
+      case 'Select':
+      case 'MultiSelect':
+        return [
+          { value: 'Equals', name: 'Equals' },
+          { value: 'NotEquals', name: 'Not Equals' }
+        ];
+      default:
+        return [{ value: 'Equals', name: 'Equals' }];
+    }
+  }
+
+  protected onFilterFieldChange(rule: any) {
+    rule.operator = 'Equals';
+    rule.value = '';
+    rule.valueTo = '';
+  }
+
+  protected addAdvancedFilterRule() {
+    const fields = this.getAvailableFields();
+    const defaultField = fields.length > 0 ? fields[0].key : '';
+    this.advancedFilterData.rules.push({
+      field: defaultField,
+      operator: 'Equals',
+      value: '',
+      valueTo: ''
+    });
+  }
+
+  protected removeAdvancedFilterRule(index: number) {
+    this.advancedFilterData.rules.splice(index, 1);
+  }
+
+  protected applyAdvancedFilter() {
+    // Validate rules
+    const validRules = this.advancedFilterData.rules.filter(r => r.field && r.value !== undefined && r.value !== '');
+    if (validRules.length === 0) {
+      this.toastService.error('Please add at least one rule with a valid value.');
+      return;
+    }
+
+    this.advancedFilterActive.set(true);
+    this.taskFilters.page = 1; // reset pagination
+    this.loadTasks();
+  }
+
+  protected clearAdvancedFilter() {
+    this.advancedFilterData.rules = [];
+    this.advancedFilterActive.set(false);
+    this.taskFilters.page = 1; // reset pagination
+    this.loadTasks();
+  }
+
+  protected getFieldOptions(fieldKey: string) {
+    if (fieldKey === 'Status') {
+      return [
+        { value: 'Todo', name: 'Todo' },
+        { value: 'InProgress', name: 'In Progress' },
+        { value: 'InReview', name: 'In Review' },
+        { value: 'Done', name: 'Completed' },
+        { value: 'Cancelled', name: 'Cancelled' }
+      ];
+    }
+    if (fieldKey === 'Priority') {
+      return [
+        { value: 'Low', name: 'Low' },
+        { value: 'Medium', name: 'Medium' },
+        { value: 'High', name: 'High' },
+        { value: 'Critical', name: 'Critical' }
+      ];
+    }
+    if (fieldKey === 'AssigneeId') {
+      return this.members().map(m => ({ value: m.userId, name: m.userFullName }));
+    }
+    // Dynamic field options
+    const dfs = this.dynamicFields() || [];
+    const df = dfs.find(f => f.fieldKey === fieldKey);
+    if (df && df.options) {
+      return df.options.map((opt: string) => ({ value: opt, name: opt }));
+    }
+    return [];
+  }
+
+  protected getFieldType(fieldKey: string): string {
+    const fields = this.getAvailableFields();
+    const field = fields.find(f => f.key === fieldKey);
+    return field ? field.type : 'Text';
+  }
 
   // Modals state
   protected showEditModal = signal(false);
@@ -1515,17 +1857,48 @@ export class ProjectDetail implements OnInit {
   }
 
   loadTasks() {
-    this.taskService.getProjectTasks(this.projectId, this.taskFilters).subscribe({
-      next: (res) => {
-        this.tasks.set(res.items || []);
-        this.generateTimeline();
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.toastService.error('Failed to load tasks list.');
-      }
-    });
+    this.loading.set(true);
+    if (this.advancedFilterActive()) {
+      const advancedFilter = {
+        filter: {
+          operator: this.advancedFilterData.operator,
+          rules: this.advancedFilterData.rules
+            .filter(r => r.field && r.value !== undefined && r.value !== '')
+            .map(r => ({
+              field: r.field,
+              operator: r.operator,
+              value: r.value.toString(),
+              valueTo: r.valueTo ? r.valueTo.toString() : null
+            }))
+        },
+        page: this.taskFilters.page,
+        pageSize: this.taskFilters.pageSize
+      };
+
+      this.taskService.getProjectTasksAdvanced(this.projectId, advancedFilter).subscribe({
+        next: (res) => {
+          this.tasks.set(res.items || []);
+          this.generateTimeline();
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+          this.toastService.error('Failed to load tasks with advanced filter.');
+        }
+      });
+    } else {
+      this.taskService.getProjectTasks(this.projectId, this.taskFilters).subscribe({
+        next: (res) => {
+          this.tasks.set(res.items || []);
+          this.generateTimeline();
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+          this.toastService.error('Failed to load tasks list.');
+        }
+      });
+    }
   }
 
   loadMembers() {

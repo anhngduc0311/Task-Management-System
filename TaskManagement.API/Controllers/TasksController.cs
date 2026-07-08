@@ -12,6 +12,9 @@ using TaskManagement.Domain.Enums;
 using Task = TaskManagement.Domain.Entities.Task;
 using TaskStatus = TaskManagement.Domain.Enums.TaskStatus;
 using TaskManagement.Domain.Entities;
+using TaskManagement.Application.DTOs.Reports;
+using TaskManagement.Application.Services;
+
 
 namespace TaskManagement.API.Controllers
 {
@@ -134,6 +137,81 @@ namespace TaskManagement.API.Controllers
                 totalCount,
                 page,
                 pageSize
+            });
+        }
+
+        [HttpPost("projects/{projectId}/tasks/advanced")]
+        [RequireProjectMembership]
+        public async Task<IActionResult> GetProjectTasksAdvanced(
+            Guid projectId,
+            [FromBody] AdvancedFilterDto filter)
+        {
+            if (filter == null) return BadRequest(new { message = "Filter body is required." });
+            
+            var defaultPageSize = _configuration.GetValue<int>("Pagination:DefaultPageSize", 10);
+            var maxPageSize = _configuration.GetValue<int>("Pagination:MaxPageSize", 100);
+
+            if (filter.Page < 1) filter.Page = 1;
+            if (filter.PageSize < 1 || filter.PageSize > maxPageSize) filter.PageSize = defaultPageSize;
+
+            var baseQuery = _dbContext.Tasks
+                .Where(t => t.ProjectId == projectId);
+
+            var query = baseQuery;
+
+            if (filter.Filter != null)
+            {
+                var expression = AdvancedQueryBuilder.BuildExpression(filter.Filter);
+                query = query.Where(expression);
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(t => new TaskDto
+                {
+                    Id = t.Id,
+                    ProjectId = t.ProjectId,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Status = t.Status.ToString(),
+                    Priority = t.Priority.ToString(),
+                    AssigneeId = t.AssigneeId,
+                    AssigneeName = t.Assignee != null ? t.Assignee.FullName : null,
+                    CreatedById = t.CreatedById,
+                    CreatedByName = t.CreatedBy.FullName,
+                    DueDate = t.DueDate,
+                    ParentTaskId = t.ParentTaskId,
+                    ParentTaskTitle = t.ParentTask != null ? t.ParentTask.Title : null,
+                    SubtasksCount = t.ChildTasks.Count(c => !c.IsDeleted),
+                    CompletedSubtasksCount = t.ChildTasks.Count(c => !c.IsDeleted && c.Status == TaskStatus.Done),
+                    CreatedAt = t.CreatedAt,
+                    UpdatedAt = t.UpdatedAt,
+                    RowVersion = Convert.ToBase64String(t.RowVersion)
+                })
+                .ToListAsync();
+
+            var taskIds = items.Select(t => t.Id).ToList();
+            var allDynamicValues = await _dbContext.TaskDynamicFieldValues
+                .Where(v => taskIds.Contains(v.TaskId))
+                .Include(v => v.DynamicFieldDefinition)
+                .ToListAsync();
+
+            foreach (var item in items)
+            {
+                item.DynamicValues = allDynamicValues
+                    .Where(v => v.TaskId == item.Id)
+                    .ToDictionary(v => v.DynamicFieldDefinition.FieldKey, v => v.FieldValue ?? string.Empty);
+            }
+
+            return Ok(new
+            {
+                items,
+                totalCount,
+                page = filter.Page,
+                pageSize = filter.PageSize
             });
         }
 
