@@ -23,5 +23,8 @@ namespace TaskManagement.Application.Interfaces
         Task<bool> CanDownloadAttachmentAsync(Guid userId, Guid attachmentId);
         
         Task<bool> CanViewAuditLogAsync(Guid userId, Guid projectId);
+
+        Task<bool> CanManageProductsAsync(Guid userId);
+        Task<bool> CanViewProductsAsync(Guid userId);
     }
 }

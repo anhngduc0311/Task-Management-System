@@ -194,5 +194,22 @@ namespace TaskManagement.Application.Services
             var role = await GetProjectRoleAsync(userId, projectId);
             return role == ProjectMemberRole.ProjectManager; // PMs and Admins can view audit logs
         }
+
+        private async Task<bool> HasSystemRoleAsync(Guid userId, params string[] roleNames)
+        {
+            return await _dbContext.UserRoles
+                .AnyAsync(ur => ur.UserId == userId && roleNames.Contains(ur.Role.Name));
+        }
+
+        public async Task<bool> CanManageProductsAsync(Guid userId)
+        {
+            return await IsAdminAsync(userId) || await HasSystemRoleAsync(userId, "Inventory Manager");
+        }
+
+        public async Task<bool> CanViewProductsAsync(Guid userId)
+        {
+            return await IsAdminAsync(userId) || 
+                   await HasSystemRoleAsync(userId, "Inventory Manager", "Warehouse Staff", "Viewer");
+        }
     }
 }
