@@ -39,6 +39,29 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(uc => new { uc.ProductId, uc.FromUnitId, uc.ToUnitId })
                 .IsUnique();
+
+            builder.HasData(
+                new ProductUnitConversion
+                {
+                    Id = Guid.Parse("fb000000-0000-0000-0000-000000000021"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000002"), // Vinamilk Milk
+                    FromUnitId = Guid.Parse("f11e11a1-3333-3333-3333-333333333333"), // THUNG
+                    ToUnitId = Guid.Parse("f11e11a1-2222-2222-2222-222222222222"), // HOP
+                    ConversionRate = 48m,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new ProductUnitConversion
+                {
+                    Id = Guid.Parse("fb000000-0000-0000-0000-000000000031"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000003"), // Bút bi TL-027
+                    FromUnitId = Guid.Parse("f11e11a1-2222-2222-2222-222222222222"), // HOP
+                    ToUnitId = Guid.Parse("f11e11a1-1111-1111-1111-111111111111"), // CAI
+                    ConversionRate = 20m,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         }
     }
 }

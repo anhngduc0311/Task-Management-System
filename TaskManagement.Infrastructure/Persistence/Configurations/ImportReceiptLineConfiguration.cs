@@ -54,6 +54,37 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 .WithMany()
                 .HasForeignKey(l => l.UnitId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasData(
+                new ImportReceiptLine
+                {
+                    Id = Guid.Parse("db000000-0000-0000-0000-000000000011"),
+                    ImportReceiptId = Guid.Parse("db000000-0000-0000-0000-000000000001"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000001"), // Dell XPS 13
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000011"), // i7
+                    Quantity = 50m,
+                    UnitId = Guid.Parse("f11e11a1-1111-1111-1111-111111111111"), // CAI
+                    UnitPrice = 45000000m,
+                    Amount = 2250000000m,
+                    BaseQuantity = 50m,
+                    ConversionRate = 1m,
+                    CreatedAt = new DateTime(2026, 7, 13, 10, 0, 0, DateTimeKind.Utc)
+                },
+                new ImportReceiptLine
+                {
+                    Id = Guid.Parse("db000000-0000-0000-0000-000000000012"),
+                    ImportReceiptId = Guid.Parse("db000000-0000-0000-0000-000000000001"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000004"), // Polo Uniqlo
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000041"), // Size M
+                    Quantity = 65m,
+                    UnitId = Guid.Parse("f11e11a1-1111-1111-1111-111111111111"), // CAI
+                    UnitPrice = 492307.6923m,
+                    Amount = 32000000m,
+                    BaseQuantity = 65m,
+                    ConversionRate = 1m,
+                    CreatedAt = new DateTime(2026, 7, 13, 10, 0, 0, DateTimeKind.Utc)
+                }
+            );
         }
     }
 }

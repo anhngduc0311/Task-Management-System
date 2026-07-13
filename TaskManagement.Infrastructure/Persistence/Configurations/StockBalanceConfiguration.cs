@@ -48,6 +48,72 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 .HasDatabaseName("IX_StockBalances_Unique_NoVariant")
                 .HasFilter("[ProductVariantId] IS NULL")
                 .IsUnique();
+
+            builder.HasData(
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000011"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000001"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000011"),
+                    Quantity = 50m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000012"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000001"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000012"),
+                    Quantity = 30m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000021"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000002"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000021"),
+                    Quantity = 1200m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000031"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000003"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000031"),
+                    Quantity = 500m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000041"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000004"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000041"),
+                    Quantity = 150m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000042"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000004"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000042"),
+                    Quantity = 200m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new StockBalance
+                {
+                    Id = Guid.Parse("b0000000-0000-0000-0000-000000000043"),
+                    WarehouseId = Guid.Parse("e11e11a1-1111-1111-1111-111111111111"),
+                    ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000004"),
+                    ProductVariantId = Guid.Parse("fa000000-0000-0000-0000-000000000043"),
+                    Quantity = 100m,
+                    LastUpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         }
     }
 }

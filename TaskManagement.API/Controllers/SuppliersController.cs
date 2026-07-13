@@ -35,18 +35,12 @@ namespace TaskManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] bool? isActive, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] bool? isActive)
         {
             if (!await _permissionService.CanViewProductsAsync(CurrentUserId))
             {
                 return Forbid();
             }
-
-            var defaultPageSize = _configuration.GetValue<int>("Pagination:DefaultPageSize", 10);
-            var maxPageSize = _configuration.GetValue<int>("Pagination:MaxPageSize", 100);
-
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > maxPageSize) pageSize = defaultPageSize;
 
             var query = _dbContext.Suppliers.AsQueryable();
 
@@ -64,12 +58,8 @@ namespace TaskManagement.API.Controllers
                 query = query.Where(s => s.IsActive == isActive.Value);
             }
 
-            var totalCount = await query.CountAsync();
-
             var items = await query
                 .OrderBy(s => s.Name)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
                 .Select(s => new SupplierDto
                 {
                     Id = s.Id,
@@ -84,13 +74,7 @@ namespace TaskManagement.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new
-            {
-                items,
-                totalCount,
-                page,
-                pageSize
-            });
+            return Ok(items);
         }
 
         [HttpGet("{id}")]

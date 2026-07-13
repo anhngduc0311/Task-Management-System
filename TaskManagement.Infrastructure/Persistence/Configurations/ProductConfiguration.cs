@@ -77,6 +77,69 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
             builder.HasIndex(p => p.Status)
                 .HasDatabaseName("IX_Products_Status")
                 .HasFilter("[IsDeleted] = 0");
+
+            builder.HasData(
+                new Product
+                {
+                    Id = Guid.Parse("f0000000-0000-0000-0000-000000000001"),
+                    ProductCode = "PROD_DELL_XPS13",
+                    Name = "Laptop Dell XPS 13 9320",
+                    Description = "Laptop cao cấp Dell XPS 13 Plus với chip Intel Core i7/i9 thế hệ 13, RAM 16GB/32GB, SSD 512GB/1TB.",
+                    DefaultPrice = 45000000m,
+                    BaseUnitId = Guid.Parse("f11e11a1-1111-1111-1111-111111111111"), // CAI
+                    CategoryId = Guid.Parse("c0000000-0000-0000-0000-000000000001"), // Electronics
+                    Status = TaskManagement.Domain.Enums.ProductStatus.Active,
+                    OriginId = Guid.Parse("d0000000-0000-0000-0000-000000000003"), // USA
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Product
+                {
+                    Id = Guid.Parse("f0000000-0000-0000-0000-000000000002"),
+                    ProductCode = "PROD_VNM_MILK_180",
+                    Name = "Sữa tươi Vinamilk ít đường 180ml",
+                    Description = "Sữa tươi tiệt trùng Vinamilk ít đường, thơm ngon bổ dưỡng.",
+                    DefaultPrice = 32000m,
+                    BaseUnitId = Guid.Parse("f11e11a1-2222-2222-2222-222222222222"), // HOP
+                    CategoryId = Guid.Parse("c0000000-0000-0000-0000-000000000003"), // Food
+                    Status = TaskManagement.Domain.Enums.ProductStatus.Active,
+                    OriginId = Guid.Parse("d0000000-0000-0000-0000-000000000001"), // VN
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Product
+                {
+                    Id = Guid.Parse("f0000000-0000-0000-0000-000000000003"),
+                    ProductCode = "PROD_TL_027",
+                    Name = "Bút bi Thiên Long TL-027",
+                    Description = "Bút bi mực xanh Thiên Long TL-027, viết trơn, đều mực, được ưa chuộng nhất.",
+                    DefaultPrice = 4000m,
+                    BaseUnitId = Guid.Parse("f11e11a1-1111-1111-1111-111111111111"), // CAI
+                    CategoryId = Guid.Parse("c0000000-0000-0000-0000-000000000004"), // Office
+                    Status = TaskManagement.Domain.Enums.ProductStatus.Active,
+                    OriginId = Guid.Parse("d0000000-0000-0000-0000-000000000001"), // VN
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Product
+                {
+                    Id = Guid.Parse("f0000000-0000-0000-0000-000000000004"),
+                    ProductCode = "PROD_UNIQLO_POLO",
+                    Name = "Áo thun Polo Nam Uniqlo",
+                    Description = "Áo Polo nam Uniqlo chất liệu thun cotton thoáng mát, thấm hút mồ hôi tốt.",
+                    DefaultPrice = 490000m,
+                    BaseUnitId = Guid.Parse("f11e11a1-1111-1111-1111-111111111111"), // CAI
+                    CategoryId = Guid.Parse("c0000000-0000-0000-0000-000000000002"), // Fashion
+                    Status = TaskManagement.Domain.Enums.ProductStatus.Active,
+                    OriginId = Guid.Parse("d0000000-0000-0000-0000-000000000002"), // JP
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 7, 7, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         }
     }
 }

@@ -27,7 +27,14 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.HasIndex(l => l.Code)
-                .IsUnique();
+                 .IsUnique();
+
+            builder.HasData(
+                new ProductLabel { Id = Guid.Parse("e0000000-0000-0000-0000-000000000001"), Code = "LBL_HOT", Name = "Bán chạy", Color = "#ef4444", IsActive = true },
+                new ProductLabel { Id = Guid.Parse("e0000000-0000-0000-0000-000000000002"), Code = "LBL_NEW", Name = "Sản phẩm mới", Color = "#10b981", IsActive = true },
+                new ProductLabel { Id = Guid.Parse("e0000000-0000-0000-0000-000000000003"), Code = "LBL_SALE", Name = "Khuyến mãi", Color = "#f59e0b", IsActive = true },
+                new ProductLabel { Id = Guid.Parse("e0000000-0000-0000-0000-000000000004"), Code = "LBL_PREMIUM", Name = "Cao cấp", Color = "#8b5cf6", IsActive = true }
+            );
         }
     }
 }

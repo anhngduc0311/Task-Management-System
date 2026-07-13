@@ -21,6 +21,13 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 .WithMany(l => l.ProductProductLabels)
                 .HasForeignKey(pl => pl.ProductLabelId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasData(
+                new ProductProductLabel { ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000001"), ProductLabelId = Guid.Parse("e0000000-0000-0000-0000-000000000004") }, // Dell XPS 13 -> Premium
+                new ProductProductLabel { ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000002"), ProductLabelId = Guid.Parse("e0000000-0000-0000-0000-000000000002") }, // Vinamilk -> New
+                new ProductProductLabel { ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000003"), ProductLabelId = Guid.Parse("e0000000-0000-0000-0000-000000000001") }, // Bút bi -> Bán chạy
+                new ProductProductLabel { ProductId = Guid.Parse("f0000000-0000-0000-0000-000000000004"), ProductLabelId = Guid.Parse("e0000000-0000-0000-0000-000000000003") }  // Polo Uniqlo -> Khuyến mãi
+            );
         }
     }
 }

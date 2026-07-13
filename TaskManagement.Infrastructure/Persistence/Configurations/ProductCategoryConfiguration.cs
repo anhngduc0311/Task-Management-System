@@ -36,6 +36,13 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 .WithMany(c => c.Children)
                 .HasForeignKey(c => c.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasData(
+                new ProductCategory { Id = Guid.Parse("c0000000-0000-0000-0000-000000000001"), Code = "CAT_ELE", Name = "Điện tử", Description = "Thiết bị điện tử, công nghệ", IsActive = true, DisplayOrder = 1 },
+                new ProductCategory { Id = Guid.Parse("c0000000-0000-0000-0000-000000000002"), Code = "CAT_FAS", Name = "Thời trang", Description = "Quần áo, phụ kiện thời trang", IsActive = true, DisplayOrder = 2 },
+                new ProductCategory { Id = Guid.Parse("c0000000-0000-0000-0000-000000000003"), Code = "CAT_FNB", Name = "Thực phẩm & Đồ uống", Description = "Thức ăn, nước uống, sữa", IsActive = true, DisplayOrder = 3 },
+                new ProductCategory { Id = Guid.Parse("c0000000-0000-0000-0000-000000000004"), Code = "CAT_OFF", Name = "Văn phòng phẩm", Description = "Bút, tập, dụng cụ văn phòng", IsActive = true, DisplayOrder = 4 }
+            );
         }
     }
 }
