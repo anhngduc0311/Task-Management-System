@@ -1,5 +1,5 @@
 # SPEC — Task Management System
-**Phiên bản:** 1.0 | **Ngày:** 2026-07-07 | **Trạng thái:** Sẵn sàng thực thi
+**Phiên bản:** 2.0 | **Ngày:** 2026-07-13 | **Trạng thái:** Sẵn sàng thực thi
 
 ---
 
@@ -33,15 +33,18 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 - **Bình luận** và **đính kèm file** ngay trong task.
 - **Phân quyền theo vai trò** (Admin / Project Manager / Member / Guest).
 - **Lịch sử thay đổi** có thể truy vết (Audit Log).
+- Quản lý **Sản phẩm** với danh mục cha/con, biến thể, đơn vị tính quy đổi, nhà cung cấp, xuất xứ.
+- Quản lý **Tồn kho** theo kho: phiếu nhập, phiếu xuất, phiếu chuyển kho.
+- **Báo cáo tồn kho** theo sản phẩm, kho, biến thể với lịch sử phát sinh.
 
 ### 1.3. Định vị sản phẩm
 
 | Tiêu chí | Định vị |
 |---|---|
 | **Đối tượng** | Nhóm nội bộ 5–50 người |
-| **Phong cách** | Jira-lite: đủ tính năng nhưng không quá phức tạp |
-| **Giai đoạn** | MVP — ra sản phẩm dùng được, không nhồi tính năng |
-| **Kiến trúc** | Modular Monolith, mở rộng được sau MVP |
+| **Phong cách** | Jira-lite + ERP-lite: quản lý công việc kết hợp quản lý sản phẩm & tồn kho |
+| **Giai đoạn** | MVP Phase 2 — bổ sung module QLSP + Tồn kho |
+| **Kiến trúc** | Modular Monolith, mỗi module là bounded context riêng |
 | **Ưu tiên** | Dễ dùng → Ổn định → Bảo mật → Truy vết → Mở rộng |
 
 ### 1.4. Những gì KHÔNG có trong MVP
@@ -144,7 +147,104 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 - **FR-11.4** Bộ lọc nâng cao: Lọc theo dự án, người nhận, trạng thái, mức độ ưu tiên, khoảng thời gian tạo task, và đặc biệt là lọc động dựa theo các Trường dữ liệu động (Dynamic Fields) của dự án đang chọn.
 - **FR-11.5** Danh sách chi tiết các Task quá hạn, Task chưa hoàn thành, Task đã hoàn thành có phân trang (pagination) và liên kết mở nhanh chi tiết Task.
 
----
+#### FR-12: Quản lý đơn vị tính
+- **FR-12.1** Hệ thống có bảng quản lý đơn vị tính (Units) với Id, Code, Name, IsActive.
+- **FR-12.2** Mỗi sản phẩm có một đơn vị tính cơ sở (BaseUnitId).
+- **FR-12.3** Hỗ trợ quy đổi đơn vị: mỗi sản phẩm có bảng ProductUnitConversions định nghĩa tỷ lệ quy đổi từ đơn vị khác về đơn vị cơ sở (ví dụ: 1 Thùng = 24 Lon).
+- **FR-12.4** Tồn kho phải lưu theo đơn vị cơ sở để tránh sai lệch.
+- **FR-12.5** Khi nhập/xuất/chuyển kho có thể chọn đơn vị tính khác, backend tự quy đổi số lượng về đơn vị cơ sở.
+- **FR-12.6** Không cho phép tỷ lệ quy đổi bằng 0 hoặc âm.
+- **FR-12.7** Không cho phép xóa đơn vị tính đang được sản phẩm sử dụng.
+
+#### FR-13: Quản lý danh mục sản phẩm
+- **FR-13.1** Danh mục sản phẩm (ProductCategories) hỗ trợ cha/con nhiều cấp qua ParentId.
+- **FR-13.2** Danh mục có: Id, ParentId, Code, Name, Description, IsActive, DisplayOrder.
+- **FR-13.3** Không cho danh mục tự làm cha của chính nó.
+- **FR-13.4** Không cho tạo vòng lặp danh mục (circular reference).
+- **FR-13.5** Tìm kiếm theo danh mục cha phải trả ra cả sản phẩm thuộc danh mục con.
+- **FR-13.6** Không cho xóa cứng danh mục đang có sản phẩm.
+- **FR-13.7** Có thể xóa mềm hoặc tắt trạng thái sử dụng.
+
+#### FR-14: Quản lý nhãn sản phẩm
+- **FR-14.1** Một sản phẩm có thể có nhiều nhãn (Hàng bán chạy, Hàng mới, Hàng khuyến mãi, Hàng dễ vỡ).
+- **FR-14.2** Có bảng ProductLabels (Id, Name, Code, Color, IsActive) và bảng liên kết ProductProductLabels.
+- **FR-14.3** Có thể lọc sản phẩm theo nhãn.
+
+#### FR-15: Quản lý xuất xứ
+- **FR-15.1** Có bảng Origins (Id, Name, Code, IsActive) quản lý xuất xứ sản phẩm.
+- **FR-15.2** Sản phẩm gắn với một xuất xứ (OriginId).
+- **FR-15.3** Hỗ trợ filter sản phẩm theo xuất xứ.
+
+#### FR-16: Quản lý nhà cung cấp
+- **FR-16.1** Có module quản lý nhà cung cấp (Suppliers) với: Id, Code, Name, Phone, Email, Address, TaxCode, ContactPerson, IsActive, CreatedAt, UpdatedAt.
+- **FR-16.2** Sản phẩm có thể gắn với một hoặc nhiều nhà cung cấp qua bảng ProductSuppliers.
+- **FR-16.3** CRUD nhà cung cấp với phân quyền.
+- **FR-16.4** Không cho xóa cứng nhà cung cấp đang được sản phẩm sử dụng.
+
+#### FR-17: Quản lý sản phẩm
+- **FR-17.1** CRUD sản phẩm với các thông tin: mã, tên, đơn vị tính, đơn giá, nhãn, ảnh, danh mục, trạng thái, mô tả, nhà cung cấp, xuất xứ, thuộc tính.
+- **FR-17.2** Mã sản phẩm (ProductCode) là duy nhất, không được trùng, có thể nhập thủ công hoặc sinh tự động, dùng để tìm kiếm nhanh.
+- **FR-17.3** Không cho xóa cứng sản phẩm nếu đã phát sinh tồn kho hoặc chứng từ kho.
+- **FR-17.4** Sản phẩm có trạng thái: `Active | Inactive | Discontinued`.
+- **FR-17.5** Sản phẩm Inactive không hiện trong danh sách chọn khi tạo phiếu mới.
+- **FR-17.6** Sản phẩm Discontinued không cho nhập thêm hàng nếu business rule yêu cầu.
+- **FR-17.7** Đơn giá mặc định (DefaultPrice), không được âm, có thể nhập theo đơn vị tính. Backend quy đổi đơn giá nếu cần.
+- **FR-17.8** Upload nhiều ảnh sản phẩm, chọn ảnh chính (IsPrimary), giới hạn loại file: jpg, jpeg, png, webp. Giới hạn dung lượng theo cấu hình. Database chỉ lưu metadata (FileName, StorageKey, Url, IsPrimary, DisplayOrder).
+- **FR-17.9** Mô tả chi tiết bằng rich text editor. Backend lưu dạng HTML đã sanitize hoặc JSON editor content. Phải chống XSS, không render HTML chưa sanitize. Giới hạn độ dài theo cấu hình.
+- **FR-17.10** Một sản phẩm tối đa 2 nhóm thuộc tính (ProductAttributeGroups). Ví dụ: Màu sắc + Size. Không cho tạo attribute group thứ 3.
+- **FR-17.11** Mỗi nhóm thuộc tính có nhiều giá trị (ProductAttributeValues). Ví dụ: Màu sắc = Đỏ, Xanh, Đen.
+- **FR-17.12** Hệ thống tạo biến thể sản phẩm (ProductVariants) từ tổ hợp thuộc tính. Mỗi biến thể có SKU riêng, giá riêng nếu cần, ảnh riêng nếu cần, tồn kho riêng.
+- **FR-17.13** Nếu sản phẩm không có thuộc tính → tồn kho theo sản phẩm gốc. Nếu có biến thể → tồn kho theo biến thể.
+- **FR-17.14** Không cho trùng SKU variant. Không cho trùng tên thuộc tính trong cùng sản phẩm.
+- **FR-17.15** Khi sản phẩm đã có tồn kho, hạn chế sửa/xóa variant để tránh sai lệch lịch sử.
+- **FR-17.16** Sản phẩm hỗ trợ optimistic concurrency (RowVersion).
+
+#### FR-18: Tìm kiếm & lọc sản phẩm
+- **FR-18.1** Tìm kiếm theo tên sản phẩm, mã sản phẩm (LIKE search).
+- **FR-18.2** Lọc theo danh mục, bao gồm tự động lấy sản phẩm thuộc danh mục con (includeChildCategories).
+- **FR-18.3** Lọc theo nhà cung cấp, xuất xứ, trạng thái sử dụng, nhãn sản phẩm.
+- **FR-18.4** Có pagination, sort theo: tên, mã, ngày tạo, đơn giá.
+- **FR-18.5** Hỗ trợ API search: `POST /api/products/search` với request body chứa keyword, filters, pagination, sort.
+- **FR-18.6** Query tối ưu: dùng projection DTO, không Include tràn lan, không concat SQL string nguy hiểm.
+- **FR-18.7** Hiển thị tồn kho tổng nếu cần trong danh sách sản phẩm.
+- **FR-18.8** Kiểm tra quyền xem sản phẩm nếu hệ thống có phân quyền.
+
+#### FR-19: Quản lý kho hàng
+- **FR-19.1** CRUD kho hàng (Warehouses) với: Id, Code, Name, Address, ManagerName, IsActive, CreatedAt, UpdatedAt.
+- **FR-19.2** Không xóa cứng kho nếu đã có giao dịch tồn kho.
+- **FR-19.3** Kho Inactive không cho tạo phiếu mới.
+
+#### FR-20: Tồn kho & Phiếu nhập/xuất/chuyển kho
+- **FR-20.1** Tồn kho theo Warehouse × Product (hoặc ProductVariant nếu có biến thể). Số lượng lưu theo đơn vị cơ sở.
+- **FR-20.2** Có bảng StockBalances lưu số dư tồn kho hiện tại (QuantityOnHand, QuantityReserved).
+- **FR-20.3** Có bảng StockMovements lưu lịch sử phát sinh với MovementType: `Import | Export | TransferIn | TransferOut | Adjustment`.
+- **FR-20.4** Mọi thay đổi tồn kho phải sinh StockMovement. Backend là nguồn sự thật duy nhất.
+- **FR-20.5** Không được sửa trực tiếp StockBalance từ frontend.
+- **FR-20.6** Phiếu nhập kho (ImportReceipt): Status `Draft → Confirmed → Cancelled`. Khi Confirmed → tăng tồn kho + ghi StockMovement loại Import.
+- **FR-20.7** Phiếu xuất kho (ExportReceipt): Status `Draft → Confirmed → Cancelled`. Khi Confirmed → giảm tồn kho + ghi StockMovement loại Export.
+- **FR-20.8** Phiếu chuyển kho (TransferReceipt): Status `Draft → Confirmed → Cancelled`. Khi Confirmed → giảm tồn kho nguồn (TransferOut) + tăng tồn kho đích (TransferIn).
+- **FR-20.9** Không cho xuất/chuyển quá tồn nếu AllowNegativeStock = false (mặc định false).
+- **FR-20.10** Phiếu Confirmed không được sửa dòng hàng. Draft có thể sửa tự do.
+- **FR-20.11** Mỗi phiếu phải có ít nhất một dòng hàng. Quantity phải > 0.
+- **FR-20.12** Phiếu chuyển kho: FromWarehouseId ≠ ToWarehouseId.
+- **FR-20.13** Toàn bộ thao tác kho phải nằm trong một database transaction.
+- **FR-20.14** Hủy phiếu đã Confirmed cần tạo movement adjustment/phiếu đảo theo rule rõ ràng.
+- **FR-20.15** Phiếu nhập/xuất mỗi dòng có: ProductId, ProductVariantId (nullable), UnitId, Quantity, QuantityBase, UnitPrice, TotalAmount, Note.
+- **FR-20.16** Phiếu chuyển kho mỗi dòng có: ProductId, ProductVariantId (nullable), UnitId, Quantity, QuantityBase, Note (không có UnitPrice).
+
+#### FR-21: Báo cáo tồn kho
+- **FR-21.1** Xem tồn kho theo sản phẩm, theo kho, theo variant.
+- **FR-21.2** Xem lịch sử nhập/xuất/chuyển kho (StockMovements).
+- **FR-21.3** Filter theo: Product, ProductCode, Category, Warehouse, Supplier, Origin, Date range.
+- **FR-21.4** Có pagination.
+- **FR-21.5** Có khả năng export Excel ở phase sau.
+
+#### FR-22: AuditLog & Permission cho module QLSP + Kho
+- **FR-22.1** Ghi AuditLog cho tất cả hành động CRUD trên: sản phẩm, danh mục, nhà cung cấp, đơn vị tính, quy đổi đơn vị, kho, phiếu nhập/xuất/chuyển kho, điều chỉnh tồn kho. AuditLog ghi: EntityType, EntityId, Action, ChangedById, ChangedAt, OldValue, NewValue, Metadata.
+- **FR-22.2** Thiết kế 4 vai trò cho module: Admin (toàn quyền), Inventory Manager (quản lý toàn bộ QLSP + Kho), Warehouse Staff (tạo phiếu Draft, xem sản phẩm và tồn kho), Viewer (chỉ xem).
+- **FR-22.3** PermissionService kiểm tra quyền theo action cho từng vai trò.
+- **FR-22.4** Warehouse Staff không được xác nhận phiếu nếu chưa có quyền.
+- **FR-22.5** Viewer không được tạo/sửa/xóa/xác nhận bất kỳ thực thể nào.
 
 ### 2.2. Non-Functional Requirements (NFR)
 
@@ -184,6 +284,15 @@ Xây dựng một **hệ thống quản lý công việc theo nhóm (Team Task M
 | Comment | ≤ 2.000 ký tự (cấu hình) |
 | File upload | ≤ 20 MB/file (cấu hình) |
 | Attachment/task | ≤ 10 files (cấu hình) |
+| Product Name | ≤ 300 ký tự |
+| Product Code | ≤ 50 ký tự |
+| Product Description (Rich Text) | ≤ 50.000 ký tự (cấu hình) |
+| Product Image | ≤ 5 MB/ảnh (cấu hình), tối đa 10 ảnh/sản phẩm |
+| Product Image Types | jpg, jpeg, png, webp |
+| Variant SKU | ≤ 50 ký tự |
+| Receipt Lines/receipt | ≤ 100 dòng (cấu hình) |
+| Category Depth | ≤ 5 cấp (cấu hình) |
+| Attribute Groups/product | Tối đa 2 |
 
 ---
 
@@ -398,6 +507,393 @@ CREATE INDEX IX_AuditLogs_EntityType_EntityId ON AuditLogs(EntityType, EntityId)
 CREATE INDEX IX_AuditLogs_ChangedAt ON AuditLogs(ChangedAt DESC);
 ```
 
+#### Bảng `Units`
+```sql
+Units (
+  Id          UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  Code        NVARCHAR(20)      NOT NULL UNIQUE,
+  Name        NVARCHAR(100)     NOT NULL,
+  IsActive    BIT               NOT NULL DEFAULT 1,
+  CreatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+```
+
+#### Bảng `ProductCategories`
+```sql
+ProductCategories (
+  Id           UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ParentId     UNIQUEIDENTIFIER  NULL FK → ProductCategories.Id,
+  Code         NVARCHAR(50)      NOT NULL UNIQUE,
+  Name         NVARCHAR(200)     NOT NULL,
+  Description  NVARCHAR(1000)    NULL,
+  IsActive     BIT               NOT NULL DEFAULT 1,
+  DisplayOrder INT               NOT NULL DEFAULT 0,
+  CreatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+CREATE INDEX IX_ProductCategories_ParentId ON ProductCategories(ParentId);
+-- CHECK: Không cho ParentId = Id (chống tự tham chiếu)
+ALTER TABLE ProductCategories ADD CONSTRAINT CK_Category_NotSelfParent CHECK (ParentId <> Id);
+```
+
+#### Bảng `Origins`
+```sql
+Origins (
+  Id        UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  Code      NVARCHAR(20)      NOT NULL UNIQUE,
+  Name      NVARCHAR(200)     NOT NULL,
+  IsActive  BIT               NOT NULL DEFAULT 1,
+  CreatedAt DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+```
+
+#### Bảng `Suppliers`
+```sql
+Suppliers (
+  Id            UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  Code          NVARCHAR(50)      NOT NULL UNIQUE,
+  Name          NVARCHAR(300)     NOT NULL,
+  Phone         NVARCHAR(20)      NULL,
+  Email         NVARCHAR(256)     NULL,
+  Address       NVARCHAR(500)     NULL,
+  TaxCode       NVARCHAR(20)      NULL,
+  ContactPerson NVARCHAR(200)     NULL,
+  IsActive      BIT               NOT NULL DEFAULT 1,
+  CreatedAt     DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt     DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+```
+
+#### Bảng `ProductLabels`
+```sql
+ProductLabels (
+  Id        UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  Code      NVARCHAR(50)      NOT NULL UNIQUE,
+  Name      NVARCHAR(100)     NOT NULL,
+  Color     NVARCHAR(7)       NULL,       -- Hex color, ví dụ: #FF5733
+  IsActive  BIT               NOT NULL DEFAULT 1,
+  CreatedAt DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+```
+
+#### Bảng `Products`
+```sql
+Products (
+  Id            UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProductCode   NVARCHAR(50)      NOT NULL UNIQUE,
+  Name          NVARCHAR(300)     NOT NULL,
+  CategoryId    UNIQUEIDENTIFIER  NULL FK → ProductCategories.Id,
+  BaseUnitId    UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,
+  DefaultPrice  DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  OriginId      UNIQUEIDENTIFIER  NULL FK → Origins.Id,
+  Status        NVARCHAR(20)      NOT NULL DEFAULT 'Active',
+               -- Active | Inactive | Discontinued
+  Description   NVARCHAR(MAX)     NULL,       -- HTML sanitized hoặc JSON editor content
+  IsDeleted     BIT               NOT NULL DEFAULT 0,
+  CreatedById   UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
+  UpdatedById   UNIQUEIDENTIFIER  NULL FK → Users.Id,
+  CreatedAt     DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt     DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  RowVersion    ROWVERSION        NOT NULL
+)
+
+-- Indexes
+CREATE UNIQUE INDEX IX_Products_ProductCode ON Products(ProductCode) WHERE IsDeleted = 0;
+CREATE INDEX IX_Products_CategoryId ON Products(CategoryId) WHERE IsDeleted = 0;
+CREATE INDEX IX_Products_Status ON Products(Status) WHERE IsDeleted = 0;
+CREATE INDEX IX_Products_Name ON Products(Name) WHERE IsDeleted = 0;
+CREATE INDEX IX_Products_OriginId ON Products(OriginId) WHERE IsDeleted = 0;
+
+-- Constraint: DefaultPrice >= 0
+ALTER TABLE Products ADD CONSTRAINT CK_Products_DefaultPrice CHECK (DefaultPrice >= 0);
+```
+
+#### Bảng `ProductImages`
+```sql
+ProductImages (
+  Id            UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProductId     UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  FileName      NVARCHAR(260)     NOT NULL,
+  StorageKey    NVARCHAR(512)     NOT NULL,
+  Url           NVARCHAR(1000)    NOT NULL,
+  IsPrimary     BIT               NOT NULL DEFAULT 0,
+  DisplayOrder  INT               NOT NULL DEFAULT 0,
+  CreatedAt     DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+CREATE INDEX IX_ProductImages_ProductId ON ProductImages(ProductId);
+```
+
+#### Bảng `ProductProductLabels` (Many-to-Many)
+```sql
+ProductProductLabels (
+  ProductId UNIQUEIDENTIFIER  FK → Products.Id,
+  LabelId   UNIQUEIDENTIFIER  FK → ProductLabels.Id,
+  PRIMARY KEY (ProductId, LabelId)
+)
+```
+
+#### Bảng `ProductUnitConversions`
+```sql
+ProductUnitConversions (
+  Id              UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProductId       UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  FromUnitId      UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,
+  ToBaseUnitId    UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,  -- = Product.BaseUnitId
+  ConversionRate  DECIMAL(18,6)     NOT NULL,                -- 1 FromUnit = ConversionRate BaseUnit
+  CreatedAt       DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt       DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UNIQUE (ProductId, FromUnitId)
+)
+
+-- Constraint: ConversionRate > 0
+ALTER TABLE ProductUnitConversions ADD CONSTRAINT CK_UnitConversion_Rate CHECK (ConversionRate > 0);
+```
+
+#### Bảng `ProductSuppliers` (Many-to-Many)
+```sql
+ProductSuppliers (
+  ProductId  UNIQUEIDENTIFIER  FK → Products.Id,
+  SupplierId UNIQUEIDENTIFIER  FK → Suppliers.Id,
+  PRIMARY KEY (ProductId, SupplierId)
+)
+```
+
+#### Bảng `ProductAttributeGroups`
+```sql
+ProductAttributeGroups (
+  Id          UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProductId   UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  Name        NVARCHAR(100)     NOT NULL,   -- Ví dụ: "Màu sắc", "Size"
+  DisplayOrder INT              NOT NULL DEFAULT 0,
+  CreatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UNIQUE (ProductId, Name)
+)
+CREATE INDEX IX_ProductAttributeGroups_ProductId ON ProductAttributeGroups(ProductId);
+-- Ràng buộc tối đa 2 group/product được kiểm tra ở Application layer
+```
+
+#### Bảng `ProductAttributeValues`
+```sql
+ProductAttributeValues (
+  Id               UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  AttributeGroupId UNIQUEIDENTIFIER  NOT NULL FK → ProductAttributeGroups.Id,
+  Value            NVARCHAR(100)     NOT NULL,  -- Ví dụ: "Đỏ", "S", "M"
+  DisplayOrder     INT               NOT NULL DEFAULT 0,
+  CreatedAt        DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UNIQUE (AttributeGroupId, Value)
+)
+```
+
+#### Bảng `ProductVariants`
+```sql
+ProductVariants (
+  Id                UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ProductId         UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  SKU               NVARCHAR(50)      NOT NULL UNIQUE,
+  AttributeValue1Id UNIQUEIDENTIFIER  NULL FK → ProductAttributeValues.Id,
+  AttributeValue2Id UNIQUEIDENTIFIER  NULL FK → ProductAttributeValues.Id,
+  Price             DECIMAL(18,4)     NULL,     -- Override giá nếu cần, NULL = dùng giá Product
+  ImageUrl          NVARCHAR(1000)    NULL,     -- Override ảnh nếu cần
+  IsActive          BIT               NOT NULL DEFAULT 1,
+  CreatedAt         DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt         DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+CREATE UNIQUE INDEX IX_ProductVariants_SKU ON ProductVariants(SKU);
+CREATE INDEX IX_ProductVariants_ProductId ON ProductVariants(ProductId);
+
+-- Constraint: Price >= 0 nếu có
+ALTER TABLE ProductVariants ADD CONSTRAINT CK_Variants_Price CHECK (Price IS NULL OR Price >= 0);
+```
+
+#### Bảng `Warehouses`
+```sql
+Warehouses (
+  Id          UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  Code        NVARCHAR(50)      NOT NULL UNIQUE,
+  Name        NVARCHAR(200)     NOT NULL,
+  Address     NVARCHAR(500)     NULL,
+  ManagerName NVARCHAR(200)     NULL,
+  IsActive    BIT               NOT NULL DEFAULT 1,
+  CreatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt   DATETIME2         NOT NULL DEFAULT GETUTCDATE()
+)
+```
+
+#### Bảng `StockBalances`
+```sql
+StockBalances (
+  Id                UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  WarehouseId       UNIQUEIDENTIFIER  NOT NULL FK → Warehouses.Id,
+  ProductId         UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  ProductVariantId  UNIQUEIDENTIFIER  NULL FK → ProductVariants.Id,
+  QuantityOnHand    DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  QuantityReserved  DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  UpdatedAt         DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UNIQUE (WarehouseId, ProductId, ProductVariantId)
+)
+CREATE INDEX IX_StockBalances_WarehouseId ON StockBalances(WarehouseId);
+CREATE INDEX IX_StockBalances_ProductId ON StockBalances(ProductId);
+CREATE INDEX IX_StockBalances_ProductVariantId ON StockBalances(ProductVariantId) WHERE ProductVariantId IS NOT NULL;
+```
+
+#### Bảng `StockMovements`
+```sql
+StockMovements (
+  Id                UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  WarehouseId       UNIQUEIDENTIFIER  NOT NULL FK → Warehouses.Id,
+  ProductId         UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  ProductVariantId  UNIQUEIDENTIFIER  NULL FK → ProductVariants.Id,
+  MovementType      NVARCHAR(20)      NOT NULL,
+                   -- Import | Export | TransferIn | TransferOut | Adjustment
+  QuantityBase      DECIMAL(18,4)     NOT NULL,  -- Số lượng theo đơn vị cơ sở
+  UnitId            UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,
+  QuantityInput     DECIMAL(18,4)     NOT NULL,  -- Số lượng người dùng nhập
+  ReferenceType     NVARCHAR(50)      NULL,      -- ImportReceipt | ExportReceipt | TransferReceipt
+  ReferenceId       UNIQUEIDENTIFIER  NULL,      -- Id của phiếu liên quan
+  CreatedById       UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
+  CreatedAt         DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  Note              NVARCHAR(500)     NULL
+)
+CREATE INDEX IX_StockMovements_WarehouseId ON StockMovements(WarehouseId);
+CREATE INDEX IX_StockMovements_ProductId ON StockMovements(ProductId);
+CREATE INDEX IX_StockMovements_MovementType ON StockMovements(MovementType);
+CREATE INDEX IX_StockMovements_CreatedAt ON StockMovements(CreatedAt DESC);
+CREATE INDEX IX_StockMovements_ReferenceType_ReferenceId ON StockMovements(ReferenceType, ReferenceId);
+```
+
+#### Bảng `ImportReceipts`
+```sql
+ImportReceipts (
+  Id           UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ReceiptCode  NVARCHAR(50)      NOT NULL UNIQUE,
+  WarehouseId  UNIQUEIDENTIFIER  NOT NULL FK → Warehouses.Id,
+  SupplierId   UNIQUEIDENTIFIER  NULL FK → Suppliers.Id,
+  ReceiptDate  DATE              NOT NULL,
+  Status       NVARCHAR(20)      NOT NULL DEFAULT 'Draft',
+              -- Draft | Confirmed | Cancelled
+  Note         NVARCHAR(1000)    NULL,
+  CreatedById  UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
+  CreatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  RowVersion   ROWVERSION        NOT NULL
+)
+CREATE INDEX IX_ImportReceipts_WarehouseId ON ImportReceipts(WarehouseId);
+CREATE INDEX IX_ImportReceipts_Status ON ImportReceipts(Status);
+CREATE INDEX IX_ImportReceipts_ReceiptDate ON ImportReceipts(ReceiptDate);
+```
+
+#### Bảng `ImportReceiptLines`
+```sql
+ImportReceiptLines (
+  Id                UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ReceiptId         UNIQUEIDENTIFIER  NOT NULL FK → ImportReceipts.Id,
+  ProductId         UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  ProductVariantId  UNIQUEIDENTIFIER  NULL FK → ProductVariants.Id,
+  UnitId            UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,
+  Quantity          DECIMAL(18,4)     NOT NULL,
+  QuantityBase      DECIMAL(18,4)     NOT NULL,
+  UnitPrice         DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  TotalAmount       DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  Note              NVARCHAR(500)     NULL
+)
+CREATE INDEX IX_ImportReceiptLines_ReceiptId ON ImportReceiptLines(ReceiptId);
+
+-- Constraints
+ALTER TABLE ImportReceiptLines ADD CONSTRAINT CK_ImportLine_Quantity CHECK (Quantity > 0);
+ALTER TABLE ImportReceiptLines ADD CONSTRAINT CK_ImportLine_QuantityBase CHECK (QuantityBase > 0);
+ALTER TABLE ImportReceiptLines ADD CONSTRAINT CK_ImportLine_UnitPrice CHECK (UnitPrice >= 0);
+```
+
+#### Bảng `ExportReceipts`
+```sql
+ExportReceipts (
+  Id           UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ReceiptCode  NVARCHAR(50)      NOT NULL UNIQUE,
+  WarehouseId  UNIQUEIDENTIFIER  NOT NULL FK → Warehouses.Id,
+  ExportDate   DATE              NOT NULL,
+  Reason       NVARCHAR(500)     NULL,
+  Status       NVARCHAR(20)      NOT NULL DEFAULT 'Draft',
+              -- Draft | Confirmed | Cancelled
+  Note         NVARCHAR(1000)    NULL,
+  CreatedById  UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
+  CreatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt    DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  RowVersion   ROWVERSION        NOT NULL
+)
+CREATE INDEX IX_ExportReceipts_WarehouseId ON ExportReceipts(WarehouseId);
+CREATE INDEX IX_ExportReceipts_Status ON ExportReceipts(Status);
+CREATE INDEX IX_ExportReceipts_ExportDate ON ExportReceipts(ExportDate);
+```
+
+#### Bảng `ExportReceiptLines`
+```sql
+ExportReceiptLines (
+  Id                UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  ReceiptId         UNIQUEIDENTIFIER  NOT NULL FK → ExportReceipts.Id,
+  ProductId         UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  ProductVariantId  UNIQUEIDENTIFIER  NULL FK → ProductVariants.Id,
+  UnitId            UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,
+  Quantity          DECIMAL(18,4)     NOT NULL,
+  QuantityBase      DECIMAL(18,4)     NOT NULL,
+  UnitPrice         DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  TotalAmount       DECIMAL(18,4)     NOT NULL DEFAULT 0,
+  Note              NVARCHAR(500)     NULL
+)
+CREATE INDEX IX_ExportReceiptLines_ReceiptId ON ExportReceiptLines(ReceiptId);
+
+-- Constraints
+ALTER TABLE ExportReceiptLines ADD CONSTRAINT CK_ExportLine_Quantity CHECK (Quantity > 0);
+ALTER TABLE ExportReceiptLines ADD CONSTRAINT CK_ExportLine_QuantityBase CHECK (QuantityBase > 0);
+ALTER TABLE ExportReceiptLines ADD CONSTRAINT CK_ExportLine_UnitPrice CHECK (UnitPrice >= 0);
+```
+
+#### Bảng `TransferReceipts`
+```sql
+TransferReceipts (
+  Id               UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  TransferCode     NVARCHAR(50)      NOT NULL UNIQUE,
+  FromWarehouseId  UNIQUEIDENTIFIER  NOT NULL FK → Warehouses.Id,
+  ToWarehouseId    UNIQUEIDENTIFIER  NOT NULL FK → Warehouses.Id,
+  TransferDate     DATE              NOT NULL,
+  Status           NVARCHAR(20)      NOT NULL DEFAULT 'Draft',
+                  -- Draft | Confirmed | Cancelled
+  Note             NVARCHAR(1000)    NULL,
+  CreatedById      UNIQUEIDENTIFIER  NOT NULL FK → Users.Id,
+  CreatedAt        DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  UpdatedAt        DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
+  RowVersion       ROWVERSION        NOT NULL
+)
+CREATE INDEX IX_TransferReceipts_FromWarehouseId ON TransferReceipts(FromWarehouseId);
+CREATE INDEX IX_TransferReceipts_ToWarehouseId ON TransferReceipts(ToWarehouseId);
+CREATE INDEX IX_TransferReceipts_Status ON TransferReceipts(Status);
+
+-- Constraint: FromWarehouseId != ToWarehouseId
+ALTER TABLE TransferReceipts ADD CONSTRAINT CK_Transfer_DifferentWarehouses CHECK (FromWarehouseId <> ToWarehouseId);
+```
+
+#### Bảng `TransferReceiptLines`
+```sql
+TransferReceiptLines (
+  Id                UNIQUEIDENTIFIER  PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  TransferId        UNIQUEIDENTIFIER  NOT NULL FK → TransferReceipts.Id,
+  ProductId         UNIQUEIDENTIFIER  NOT NULL FK → Products.Id,
+  ProductVariantId  UNIQUEIDENTIFIER  NULL FK → ProductVariants.Id,
+  UnitId            UNIQUEIDENTIFIER  NOT NULL FK → Units.Id,
+  Quantity          DECIMAL(18,4)     NOT NULL,
+  QuantityBase      DECIMAL(18,4)     NOT NULL,
+  Note              NVARCHAR(500)     NULL
+)
+CREATE INDEX IX_TransferReceiptLines_TransferId ON TransferReceiptLines(TransferId);
+
+-- Constraints
+ALTER TABLE TransferReceiptLines ADD CONSTRAINT CK_TransferLine_Quantity CHECK (Quantity > 0);
+ALTER TABLE TransferReceiptLines ADD CONSTRAINT CK_TransferLine_QuantityBase CHECK (QuantityBase > 0);
+```
+
 ---
 
 ### 3.4. API Endpoints
@@ -496,6 +992,143 @@ GET    /api/projects/{pid}/audit-logs     → [PM/Admin] Log của project
 GET    /api/tasks/{tid}/audit-logs        → [PM/Admin] Log của task
 ```
 
+#### Units
+```
+GET    /api/units                         → Danh sách đơn vị tính
+GET    /api/units/{id}                    → Chi tiết đơn vị tính
+POST   /api/units                         → Tạo đơn vị tính
+PUT    /api/units/{id}                    → Sửa đơn vị tính
+DELETE /api/units/{id}                    → Xóa đơn vị tính (chỉ khi chưa được sử dụng)
+```
+
+#### Product Categories
+```
+GET    /api/product-categories            → Danh sách danh mục (hỗ trợ tree)
+GET    /api/product-categories/{id}       → Chi tiết danh mục
+POST   /api/product-categories            → Tạo danh mục
+PUT    /api/product-categories/{id}       → Sửa danh mục
+DELETE /api/product-categories/{id}       → Xóa mềm danh mục (chỉ khi không có sản phẩm)
+GET    /api/product-categories/{id}/children → Lấy danh mục con
+```
+
+#### Origins
+```
+GET    /api/origins                       → Danh sách xuất xứ
+GET    /api/origins/{id}                  → Chi tiết xuất xứ
+POST   /api/origins                       → Tạo xuất xứ
+PUT    /api/origins/{id}                  → Sửa xuất xứ
+DELETE /api/origins/{id}                  → Xóa xuất xứ
+```
+
+#### Product Labels
+```
+GET    /api/product-labels                → Danh sách nhãn sản phẩm
+GET    /api/product-labels/{id}           → Chi tiết nhãn
+POST   /api/product-labels                → Tạo nhãn
+PUT    /api/product-labels/{id}           → Sửa nhãn
+DELETE /api/product-labels/{id}           → Xóa nhãn
+```
+
+#### Suppliers
+```
+GET    /api/suppliers                     → Danh sách nhà cung cấp (paginated)
+GET    /api/suppliers/{id}                → Chi tiết nhà cung cấp
+POST   /api/suppliers                     → Tạo nhà cung cấp
+PUT    /api/suppliers/{id}                → Sửa nhà cung cấp
+DELETE /api/suppliers/{id}                → Xóa nhà cung cấp (chỉ khi chưa gắn sản phẩm)
+```
+
+#### Products
+```
+GET    /api/products                      → Danh sách sản phẩm (paginated + filter)
+GET    /api/products/{id}                 → Chi tiết sản phẩm
+POST   /api/products                      → Tạo sản phẩm
+PUT    /api/products/{id}                 → Sửa sản phẩm (kèm RowVersion)
+DELETE /api/products/{id}                 → Xóa mềm sản phẩm (chỉ khi chưa có tồn kho/chứng từ)
+POST   /api/products/search              → Tìm kiếm nâng cao sản phẩm
+```
+
+#### Product Images
+```
+GET    /api/products/{id}/images          → Danh sách ảnh sản phẩm
+POST   /api/products/{id}/images          → Upload ảnh sản phẩm (multi-file)
+DELETE /api/products/{id}/images/{imageId} → Xóa ảnh sản phẩm
+PUT    /api/products/{id}/images/{imageId}/primary → Đặt ảnh chính
+```
+
+#### Product Unit Conversions
+```
+GET    /api/products/{id}/unit-conversions           → Danh sách quy đổi đơn vị
+POST   /api/products/{id}/unit-conversions           → Thêm quy đổi đơn vị
+PUT    /api/products/{id}/unit-conversions/{convId}  → Sửa quy đổi
+DELETE /api/products/{id}/unit-conversions/{convId}  → Xóa quy đổi
+```
+
+#### Product Variants
+```
+GET    /api/products/{id}/variants        → Danh sách biến thể sản phẩm
+POST   /api/products/{id}/variants        → Tạo biến thể (từ tổ hợp thuộc tính)
+PUT    /api/products/{id}/variants/{vid}  → Sửa biến thể (SKU, giá, ảnh)
+DELETE /api/products/{id}/variants/{vid}  → Xóa biến thể (chỉ khi chưa có tồn kho)
+```
+
+#### Product Attribute Groups & Values
+```
+GET    /api/products/{id}/attribute-groups              → Danh sách nhóm thuộc tính
+POST   /api/products/{id}/attribute-groups              → Tạo nhóm thuộc tính (tối đa 2)
+PUT    /api/products/{id}/attribute-groups/{gid}        → Sửa nhóm thuộc tính
+DELETE /api/products/{id}/attribute-groups/{gid}        → Xóa nhóm thuộc tính
+POST   /api/products/{id}/attribute-groups/{gid}/values → Thêm giá trị thuộc tính
+DELETE /api/products/{id}/attribute-values/{vid}        → Xóa giá trị thuộc tính
+```
+
+#### Warehouses
+```
+GET    /api/warehouses                    → Danh sách kho
+GET    /api/warehouses/{id}               → Chi tiết kho
+POST   /api/warehouses                    → Tạo kho
+PUT    /api/warehouses/{id}               → Sửa kho
+DELETE /api/warehouses/{id}               → Xóa kho (chỉ khi chưa có giao dịch)
+```
+
+#### Import Receipts (Phiếu nhập kho)
+```
+GET    /api/inventory/import-receipts                → Danh sách phiếu nhập (paginated)
+GET    /api/inventory/import-receipts/{id}            → Chi tiết phiếu nhập
+POST   /api/inventory/import-receipts                → Tạo phiếu nhập (Draft)
+PUT    /api/inventory/import-receipts/{id}            → Sửa phiếu nhập (chỉ Draft)
+POST   /api/inventory/import-receipts/{id}/confirm   → Xác nhận phiếu nhập → tăng tồn kho
+POST   /api/inventory/import-receipts/{id}/cancel    → Hủy phiếu nhập
+```
+
+#### Export Receipts (Phiếu xuất kho)
+```
+GET    /api/inventory/export-receipts                → Danh sách phiếu xuất (paginated)
+GET    /api/inventory/export-receipts/{id}            → Chi tiết phiếu xuất
+POST   /api/inventory/export-receipts                → Tạo phiếu xuất (Draft)
+PUT    /api/inventory/export-receipts/{id}            → Sửa phiếu xuất (chỉ Draft)
+POST   /api/inventory/export-receipts/{id}/confirm   → Xác nhận phiếu xuất → giảm tồn kho
+POST   /api/inventory/export-receipts/{id}/cancel    → Hủy phiếu xuất
+```
+
+#### Transfer Receipts (Phiếu chuyển kho)
+```
+GET    /api/inventory/transfer-receipts              → Danh sách phiếu chuyển (paginated)
+GET    /api/inventory/transfer-receipts/{id}          → Chi tiết phiếu chuyển
+POST   /api/inventory/transfer-receipts              → Tạo phiếu chuyển (Draft)
+PUT    /api/inventory/transfer-receipts/{id}          → Sửa phiếu chuyển (chỉ Draft)
+POST   /api/inventory/transfer-receipts/{id}/confirm → Xác nhận chuyển kho → giảm kho nguồn + tăng kho đích
+POST   /api/inventory/transfer-receipts/{id}/cancel  → Hủy phiếu chuyển
+```
+
+#### Stock Reports (Báo cáo tồn kho)
+```
+GET    /api/inventory/stock-balances                 → Tồn kho hiện tại (paginated + filter)
+GET    /api/inventory/stock-movements                → Lịch sử phát sinh tồn kho (paginated + filter)
+GET    /api/inventory/products/{productId}/stock      → Tồn kho theo sản phẩm (tất cả kho)
+GET    /api/inventory/warehouses/{warehouseId}/stock  → Tồn kho theo kho (tất cả sản phẩm)
+```
+
 #### System
 ```
 GET    /health                            → Health check
@@ -510,6 +1143,22 @@ TaskManagement.sln
 │
 ├── TaskManagement.API/              # Presentation Layer
 │   ├── Controllers/
+│   │   ├── AuthController.cs
+│   │   ├── ProjectsController.cs
+│   │   ├── TasksController.cs
+│   │   ├── CommentsController.cs
+│   │   ├── AttachmentsController.cs
+│   │   ├── UnitsController.cs
+│   │   ├── ProductCategoriesController.cs
+│   │   ├── OriginsController.cs
+│   │   ├── ProductLabelsController.cs
+│   │   ├── SuppliersController.cs
+│   │   ├── ProductsController.cs
+│   │   ├── WarehousesController.cs
+│   │   ├── ImportReceiptsController.cs
+│   │   ├── ExportReceiptsController.cs
+│   │   ├── TransferReceiptsController.cs
+│   │   └── StockReportsController.cs
 │   ├── Middleware/
 │   ├── Filters/
 │   └── Program.cs
@@ -523,16 +1172,81 @@ TaskManagement.sln
 │   │   │   └── UpdateTaskStatus/
 │   │   ├── Projects/
 │   │   ├── Comments/
-│   │   └── Attachments/
+│   │   ├── Attachments/
+│   │   ├── Products/              # ← MỚI
+│   │   │   ├── CreateProduct/
+│   │   │   ├── UpdateProduct/
+│   │   │   ├── DeleteProduct/
+│   │   │   ├── SearchProducts/
+│   │   │   ├── ManageProductImages/
+│   │   │   ├── ManageUnitConversions/
+│   │   │   ├── ManageAttributeGroups/
+│   │   │   └── ManageVariants/
+│   │   ├── Categories/            # ← MỚI
+│   │   ├── Units/                 # ← MỚI
+│   │   ├── Origins/               # ← MỚI
+│   │   ├── Labels/                # ← MỚI
+│   │   ├── Suppliers/             # ← MỚI
+│   │   ├── Warehouses/            # ← MỚI
+│   │   └── Inventory/             # ← MỚI
+│   │       ├── ImportReceipts/
+│   │       │   ├── CreateImportReceipt/
+│   │       │   ├── UpdateImportReceipt/
+│   │       │   ├── ConfirmImportReceipt/
+│   │       │   └── CancelImportReceipt/
+│   │       ├── ExportReceipts/
+│   │       │   ├── CreateExportReceipt/
+│   │       │   ├── UpdateExportReceipt/
+│   │       │   ├── ConfirmExportReceipt/
+│   │       │   └── CancelExportReceipt/
+│   │       ├── TransferReceipts/
+│   │       │   ├── CreateTransferReceipt/
+│   │       │   ├── UpdateTransferReceipt/
+│   │       │   ├── ConfirmTransferReceipt/
+│   │       │   └── CancelTransferReceipt/
+│   │       └── StockReports/
 │   ├── DTOs/
+│   │   ├── Tasks/
+│   │   ├── Products/              # ← MỚI
+│   │   ├── Inventory/             # ← MỚI
+│   │   └── ...
 │   ├── Interfaces/
 │   └── Services/
 │       ├── PermissionService.cs
-│       └── AuditService.cs
+│       ├── AuditService.cs
+│       ├── UnitConversionService.cs  # ← MỚI: quy đổi đơn vị
+│       └── StockService.cs           # ← MỚI: xử lý tồn kho
 │
 ├── TaskManagement.Domain/           # Domain Layer
 │   ├── Entities/
+│   │   ├── User.cs
+│   │   ├── Project.cs
+│   │   ├── TaskItem.cs
+│   │   ├── Product.cs               # ← MỚI
+│   │   ├── ProductImage.cs          # ← MỚI
+│   │   ├── ProductCategory.cs       # ← MỚI
+│   │   ├── ProductLabel.cs          # ← MỚI
+│   │   ├── ProductUnitConversion.cs  # ← MỚI
+│   │   ├── ProductAttributeGroup.cs  # ← MỚI
+│   │   ├── ProductAttributeValue.cs  # ← MỚI
+│   │   ├── ProductVariant.cs        # ← MỚI
+│   │   ├── Supplier.cs              # ← MỚI
+│   │   ├── Origin.cs                # ← MỚI
+│   │   ├── Unit.cs                  # ← MỚI
+│   │   ├── Warehouse.cs             # ← MỚI
+│   │   ├── StockBalance.cs          # ← MỚI
+│   │   ├── StockMovement.cs         # ← MỚI
+│   │   ├── ImportReceipt.cs         # ← MỚI
+│   │   ├── ImportReceiptLine.cs     # ← MỚI
+│   │   ├── ExportReceipt.cs         # ← MỚI
+│   │   ├── ExportReceiptLine.cs     # ← MỚI
+│   │   ├── TransferReceipt.cs       # ← MỚI
+│   │   └── TransferReceiptLine.cs   # ← MỚI
 │   ├── Enums/
+│   │   ├── TaskStatus.cs
+│   │   ├── ProductStatus.cs         # ← MỚI
+│   │   ├── ReceiptStatus.cs         # ← MỚI
+│   │   └── MovementType.cs          # ← MỚI
 │   └── Rules/
 │
 └── TaskManagement.Infrastructure/   # Infrastructure Layer
@@ -555,12 +1269,25 @@ src/
 │   │   ├── auth/         (guards, interceptors, auth service)
 │   │   └── services/     (api service, error handler)
 │   ├── shared/
-│   │   └── components/   (button, modal, paginator, avatar, ...)
+│   │   └── components/   (button, modal, paginator, avatar, file-uploader, ...)
 │   ├── features/
 │   │   ├── auth/         (login page)
 │   │   ├── dashboard/    (my tasks, overview)
 │   │   ├── projects/     (list, create, detail, members)
-│   │   └── tasks/        (list, create, detail, comment, attachment)
+│   │   ├── tasks/        (list, create, detail, comment, attachment)
+│   │   ├── products/     (list, create/edit, detail, images, variants)       # ← MỚI
+│   │   ├── categories/   (list, create/edit, tree view)                      # ← MỚI
+│   │   ├── suppliers/    (list, create/edit)                                 # ← MỚI
+│   │   ├── units/        (list, create/edit)                                 # ← MỚI
+│   │   ├── origins/      (list, create/edit)                                 # ← MỚI
+│   │   ├── labels/       (list, create/edit)                                 # ← MỚI
+│   │   ├── warehouses/   (list, create/edit)                                 # ← MỚI
+│   │   ├── inventory/    (import/export/transfer receipts, stock report)     # ← MỚI
+│   │   │   ├── import-receipts/   (list, create/edit, confirm, cancel)
+│   │   │   ├── export-receipts/   (list, create/edit, confirm, cancel)
+│   │   │   ├── transfer-receipts/ (list, create/edit, confirm, cancel)
+│   │   │   └── stock-report/      (stock balances, stock movements)
+│   │   └── reports/      (work performance reports)
 │   └── app.routes.ts
 ```
 
@@ -587,6 +1314,54 @@ src/
 | Xem audit log | ✅ | ✅ | ❌ | ❌ | ❌ |
 
 *PM có thể tạo project nếu có quyền hệ thống tương ứng.
+
+### 3.8. Permission Matrix — Module Sản phẩm & Tồn kho
+
+| Hành động | Admin | Inventory Manager | Warehouse Staff | Viewer |
+|---|:---:|:---:|:---:|:---:|
+| **Sản phẩm** | | | | |
+| Xem sản phẩm | ✅ | ✅ | ✅ | ✅ |
+| Tạo sản phẩm | ✅ | ✅ | ❌ | ❌ |
+| Sửa sản phẩm | ✅ | ✅ | ❌ | ❌ |
+| Xóa sản phẩm | ✅ | ✅ | ❌ | ❌ |
+| Upload ảnh sản phẩm | ✅ | ✅ | ❌ | ❌ |
+| Quản lý biến thể | ✅ | ✅ | ❌ | ❌ |
+| **Danh mục** | | | | |
+| Xem danh mục | ✅ | ✅ | ✅ | ✅ |
+| Tạo/sửa/xóa danh mục | ✅ | ✅ | ❌ | ❌ |
+| **Đơn vị tính** | | | | |
+| Xem đơn vị tính | ✅ | ✅ | ✅ | ✅ |
+| Tạo/sửa/xóa đơn vị tính | ✅ | ✅ | ❌ | ❌ |
+| **Nhà cung cấp** | | | | |
+| Xem nhà cung cấp | ✅ | ✅ | ✅ | ✅ |
+| Tạo/sửa/xóa nhà cung cấp | ✅ | ✅ | ❌ | ❌ |
+| **Kho hàng** | | | | |
+| Xem kho | ✅ | ✅ | ✅ | ✅ |
+| Tạo/sửa/xóa kho | ✅ | ✅ | ❌ | ❌ |
+| **Phiếu nhập kho** | | | | |
+| Xem phiếu nhập | ✅ | ✅ | ✅ | ✅ |
+| Tạo phiếu nhập (Draft) | ✅ | ✅ | ✅ | ❌ |
+| Sửa phiếu nhập (Draft) | ✅ | ✅ | ✅ | ❌ |
+| Xác nhận phiếu nhập | ✅ | ✅ | ❌ | ❌ |
+| Hủy phiếu nhập | ✅ | ✅ | ❌ | ❌ |
+| **Phiếu xuất kho** | | | | |
+| Xem phiếu xuất | ✅ | ✅ | ✅ | ✅ |
+| Tạo phiếu xuất (Draft) | ✅ | ✅ | ✅ | ❌ |
+| Sửa phiếu xuất (Draft) | ✅ | ✅ | ✅ | ❌ |
+| Xác nhận phiếu xuất | ✅ | ✅ | ❌ | ❌ |
+| Hủy phiếu xuất | ✅ | ✅ | ❌ | ❌ |
+| **Phiếu chuyển kho** | | | | |
+| Xem phiếu chuyển | ✅ | ✅ | ✅ | ✅ |
+| Tạo phiếu chuyển (Draft) | ✅ | ✅ | ✅ | ❌ |
+| Sửa phiếu chuyển (Draft) | ✅ | ✅ | ✅ | ❌ |
+| Xác nhận phiếu chuyển | ✅ | ✅ | ❌ | ❌ |
+| Hủy phiếu chuyển | ✅ | ✅ | ❌ | ❌ |
+| **Báo cáo tồn kho** | | | | |
+| Xem tồn kho | ✅ | ✅ | ✅ | ✅ |
+| Xem lịch sử phát sinh | ✅ | ✅ | ✅ | ✅ |
+| Export báo cáo | ✅ | ✅ | ❌ | ❌ |
+| **Audit Log** | | | | |
+| Xem audit log module | ✅ | ✅ | ❌ | ❌ |
 
 ---
 
@@ -821,6 +1596,12 @@ Phase 0 (Setup)
     → Phase 5 (Security + Ops)
     → Phase 6 (Testing + QA)
     → Phase 7 (Advanced Features: Gantt Chart, Task Hierarchy, Dynamic Fields & Work Reports)
+    → Phase 8 (Product & Inventory Module)  ← MỚI
+        → 8A (Domain + DB: Entities, Migrations, Seed data)
+        → 8B (Product API: CRUD, Search, Images, Variants)
+        → 8C (Inventory API: Warehouses, Receipts, Stock)
+        → 8D (Frontend Angular: Product pages, Inventory pages, Reports)  [song song với 8B-8C]
+        → 8E (Testing + QA)
 ```
 
 ---
@@ -848,3 +1629,145 @@ Phase 0 (Setup)
 > 3. Member có được sửa task của người khác không? trả lời: ko (Đã triển khai)
 > 4. Có cần Guest role trong MVP không? trà lời: ko (Đã bỏ qua trong MVP)
 > 5. Phiên JWT hết hạn sau bao lâu? trà lời: 15 phút (Đã triển khai với cơ chế Access/Refresh Token)
+
+---
+
+### PHASE 8 — Product & Inventory Module
+
+> [!NOTE]
+> Phase 8 là module mới hoàn toàn, được thiết kế như một bounded context riêng trong hệ thống Modular Monolith. Không phá vỡ kiến trúc hiện tại.
+
+#### 8A — Domain & Database
+
+| # | Task | Độ phức tạp | Ưu tiên | Ghi chú |
+|---|---|:---:|:---:|---|
+| T8A.1 | Tạo Entity `Unit` (Id, Code, Name, IsActive) | S | P1 | |
+| T8A.2 | Tạo Entity `ProductCategory` với ParentId (hỗ trợ cha/con) | M | P1 | Cần check circular reference |
+| T8A.3 | Tạo Entity `Origin` | S | P1 | |
+| T8A.4 | Tạo Entity `Supplier` | S | P1 | |
+| T8A.5 | Tạo Entity `ProductLabel` + `ProductProductLabels` (M2M) | S | P1 | |
+| T8A.6 | Tạo Entity `Product` với RowVersion, soft delete, status | M | P1 | |
+| T8A.7 | Tạo Entity `ProductImage` (metadata only) | S | P1 | |
+| T8A.8 | Tạo Entity `ProductUnitConversion` với CHECK ConversionRate > 0 | M | P1 | |
+| T8A.9 | Tạo Entity `ProductSuppliers` (M2M) | S | P1 | |
+| T8A.10 | Tạo Entity `ProductAttributeGroup` + `ProductAttributeValue` | M | P1 | Tối đa 2 group/product |
+| T8A.11 | Tạo Entity `ProductVariant` với SKU unique | M | P1 | |
+| T8A.12 | Tạo Entity `Warehouse` | S | P1 | |
+| T8A.13 | Tạo Entity `StockBalance` + `StockMovement` | M | P1 | |
+| T8A.14 | Tạo Entity `ImportReceipt` + `ImportReceiptLine` với RowVersion | M | P1 | |
+| T8A.15 | Tạo Entity `ExportReceipt` + `ExportReceiptLine` với RowVersion | M | P1 | |
+| T8A.16 | Tạo Entity `TransferReceipt` + `TransferReceiptLine` với RowVersion | M | P1 | CHECK From ≠ To |
+| T8A.17 | Tạo Enums: `ProductStatus`, `ReceiptStatus`, `MovementType` | S | P1 | |
+| T8A.18 | Viết EF Core migrations cho toàn bộ 21 bảng mới | L | P1 | |
+| T8A.19 | Tạo indexes trên các cột thường filter (ProductCode, CategoryId, Status, WarehouseId, MovementType) | S | P1 | |
+| T8A.20 | Seed data: Đơn vị tính mặc định (Cái, Hộp, Thùng, Kg, G) | S | P1 | |
+| T8A.21 | Seed data: Vai trò mới (Inventory Manager, Warehouse Staff, Viewer) | S | P1 | |
+| T8A.22 | Viết unit test cho Domain entities (business rules: circular category, variant limits, conversion rate) | M | P2 | |
+
+---
+
+#### 8B — Product API (Backend)
+
+| # | Task | Độ phức tạp | Ưu tiên | Ghi chú |
+|---|---|:---:|:---:|---|
+| T8B.1 | CRUD API cho Units | S | P1 | |
+| T8B.2 | CRUD API cho ProductCategories (hỗ trợ tree, check circular) | M | P1 | |
+| T8B.3 | CRUD API cho Origins | S | P1 | |
+| T8B.4 | CRUD API cho ProductLabels | S | P1 | |
+| T8B.5 | CRUD API cho Suppliers | S | P1 | |
+| T8B.6 | CRUD API cho Products (với RowVersion, soft delete) | L | P1 | |
+| T8B.7 | API Upload/Xóa ảnh sản phẩm + đặt ảnh chính | M | P1 | |
+| T8B.8 | API Quy đổi đơn vị (ProductUnitConversions CRUD) | M | P1 | |
+| T8B.9 | API ProductAttributeGroups + Values (tối đa 2 group) | M | P1 | |
+| T8B.10 | API ProductVariants (tạo từ tổ hợp thuộc tính, SKU unique) | L | P1 | |
+| T8B.11 | API Search Products nâng cao (`POST /api/products/search`) | L | P1 | Projection DTO, child categories |
+| T8B.12 | Implement `UnitConversionService` (quy đổi số lượng và giá) | M | P1 | |
+| T8B.13 | Implement `HtmlSanitizer` cho mô tả sản phẩm (chống XSS) | M | P1 | |
+| T8B.14 | Tích hợp AuditLog vào tất cả CRUD sản phẩm | M | P1 | |
+| T8B.15 | Tích hợp Permission check cho module sản phẩm | M | P1 | |
+
+---
+
+#### 8C — Inventory API (Backend)
+
+| # | Task | Độ phức tạp | Ưu tiên | Ghi chú |
+|---|---|:---:|:---:|---|
+| T8C.1 | CRUD API cho Warehouses | S | P1 | |
+| T8C.2 | Implement `StockService` (quản lý StockBalance + StockMovement) | L | P1 | Transaction required |
+| T8C.3 | API Import Receipts: CRUD + Confirm + Cancel | L | P1 | Confirm → tăng tồn kho |
+| T8C.4 | API Export Receipts: CRUD + Confirm + Cancel | L | P1 | Confirm → giảm tồn kho, check âm kho |
+| T8C.5 | API Transfer Receipts: CRUD + Confirm + Cancel | L | P1 | From ≠ To, transaction 2 kho |
+| T8C.6 | API Stock Balances (xem tồn kho hiện tại, filter, pagination) | M | P1 | |
+| T8C.7 | API Stock Movements (lịch sử phát sinh, filter, pagination) | M | P1 | |
+| T8C.8 | API Xem tồn kho theo sản phẩm / theo kho | M | P1 | |
+| T8C.9 | Logic hủy phiếu đã Confirmed (đảo movement) | L | P1 | |
+| T8C.10 | Tích hợp AuditLog vào tất cả CRUD + Confirm/Cancel phiếu kho | M | P1 | |
+| T8C.11 | Tích hợp Permission check cho module kho | M | P1 | |
+| T8C.12 | Cấu hình `AllowNegativeStock` (mặc định false) | S | P1 | |
+
+---
+
+#### 8D — Frontend Angular Material
+
+| # | Task | Độ phức tạp | Ưu tiên | Ghi chú |
+|---|---|:---:|:---:|---|
+| T8D.1 | Cập nhật sidebar menu: thêm Products, Categories, Suppliers, Units, Warehouses, Inventory, Stock Report | S | P1 | |
+| T8D.2 | Trang CRUD đơn vị tính (Units) | S | P1 | mat-table + mat-dialog |
+| T8D.3 | Trang CRUD danh mục sản phẩm (tree view cha/con) | M | P1 | mat-tree |
+| T8D.4 | Trang CRUD xuất xứ (Origins) | S | P1 | |
+| T8D.5 | Trang CRUD nhãn sản phẩm (Labels) | S | P1 | mat-chip |
+| T8D.6 | Trang CRUD nhà cung cấp (Suppliers) | S | P1 | |
+| T8D.7 | Trang danh sách sản phẩm (search, filter, pagination, sort) | L | P1 | mat-table + mat-paginator |
+| T8D.8 | Form tạo/sửa sản phẩm (đầy đủ trường + rich text editor + upload ảnh) | L | P1 | mat-tabs, mat-card |
+| T8D.9 | Component upload nhiều ảnh + chọn ảnh chính + xóa ảnh | M | P1 | |
+| T8D.10 | Component quản lý quy đổi đơn vị theo sản phẩm | M | P1 | |
+| T8D.11 | Component quản lý thuộc tính sản phẩm (tối đa 2 nhóm) + tạo variant | L | P1 | |
+| T8D.12 | Trang CRUD kho hàng (Warehouses) | S | P1 | |
+| T8D.13 | Trang danh sách phiếu nhập kho + form tạo/sửa + confirm/cancel | L | P1 | Thêm nhiều dòng sản phẩm |
+| T8D.14 | Trang danh sách phiếu xuất kho + form tạo/sửa + confirm/cancel | L | P1 | |
+| T8D.15 | Trang danh sách phiếu chuyển kho + form tạo/sửa + confirm/cancel | L | P1 | |
+| T8D.16 | Component chọn product/variant trong dòng phiếu kho | M | P1 | mat-autocomplete |
+| T8D.17 | Component tự quy đổi đơn vị + tính thành tiền khi nhập dòng | M | P1 | |
+| T8D.18 | Trang báo cáo tồn kho (stock balances + filter) | M | P1 | |
+| T8D.19 | Trang lịch sử phát sinh tồn kho (stock movements + filter) | M | P1 | |
+| T8D.20 | Disable chỉnh sửa dòng hàng khi phiếu Confirmed | S | P1 | |
+| T8D.21 | Hiển thị tồn kho tổng trong danh sách sản phẩm | S | P2 | |
+
+---
+
+#### 8E — Testing & QA (Product + Inventory)
+
+| # | Task | Độ phức tạp | Ưu tiên | Ghi chú |
+|---|---|:---:|:---:|---|
+| T8E.1 | Unit test: Category circular reference detection | M | P1 | |
+| T8E.2 | Unit test: Product variant generation (tổ hợp thuộc tính) | M | P1 | |
+| T8E.3 | Unit test: UnitConversionService | M | P1 | |
+| T8E.4 | Unit test: StockService (import/export/transfer/adjustment) | L | P1 | |
+| T8E.5 | Integration test: CRUD Products với permission check | L | P1 | |
+| T8E.6 | Integration test: Import Receipt flow (Draft → Confirm → kiểm tra tồn kho) | L | P1 | |
+| T8E.7 | Integration test: Export Receipt flow (check âm kho khi AllowNegativeStock=false) | L | P1 | |
+| T8E.8 | Integration test: Transfer Receipt flow (2 kho, transaction) | L | P1 | |
+| T8E.9 | Integration test: Cancel confirmed receipt (đảo movement) | M | P1 | |
+| T8E.10 | Integration test: Search products (child categories, filters) | M | P1 | |
+| T8E.11 | Integration test: AuditLog cho module sản phẩm + kho | M | P2 | |
+| T8E.12 | Thực hiện kiểm tra thủ công (UAT) các luồng chính module QLSP + Kho | L | P1 | |
+
+---
+
+> [!TIP]
+> **Điểm cần chốt trước khi bắt đầu code (UAT & Release):**
+> 1. Loại file storage sẽ dùng (Local folder / Azure Blob / AWS S3)? trà lời: dùng local folder (Đã triển khai)
+> 2. Kích thước file tối đa và loại file được phép? trả lời: 20mb, file dạng ảnh (Đã triển khai)
+> 3. Member có được sửa task của người khác không? trả lời: ko (Đã triển khai)
+> 4. Có cần Guest role trong MVP không? trà lời: ko (Đã bỏ qua trong MVP)
+> 5. Phiên JWT hết hạn sau bao lâu? trà lời: 15 phút (Đã triển khai với cơ chế Access/Refresh Token)
+
+> [!IMPORTANT]
+> **Điểm cần chốt cho module QLSP + Tồn kho (Phase 8):**
+> 1. AllowNegativeStock = true hay false? Đề xuất: false (không cho âm kho)
+> 2. Mã sản phẩm tự sinh theo format nào? Ví dụ: SP-000001
+> 3. Mã phiếu kho tự sinh theo format nào? Ví dụ: NK-20260713-001, XK-20260713-001, CK-20260713-001
+> 4. Ảnh sản phẩm lưu ở đâu? Dùng chung local folder storage hiện tại
+> 5. Rich text editor dùng thư viện nào? Đề xuất: ngx-quill hoặc @ckeditor/ckeditor5-angular
+> 6. Giới hạn dung lượng ảnh sản phẩm? Đề xuất: 5MB/ảnh, tối đa 10 ảnh/sản phẩm
+> 7. Có cần export Excel ở phase này không? Đề xuất: chưa, để phase sau
