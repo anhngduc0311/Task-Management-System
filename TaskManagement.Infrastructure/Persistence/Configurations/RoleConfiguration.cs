@@ -24,7 +24,10 @@ namespace TaskManagement.Infrastructure.Persistence.Configurations
                 new Role { Id = 1, Name = "Admin" },
                 new Role { Id = 2, Name = "ProjectManager" },
                 new Role { Id = 3, Name = "Member" },
-                new Role { Id = 4, Name = "Guest" }
+                new Role { Id = 4, Name = "Guest" },
+                new Role { Id = 5, Name = "Inventory Manager" },
+                new Role { Id = 6, Name = "Warehouse Staff" },
+                new Role { Id = 7, Name = "Viewer" }
             );
         }
     }

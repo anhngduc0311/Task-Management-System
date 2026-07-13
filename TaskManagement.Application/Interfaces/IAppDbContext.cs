@@ -20,6 +20,31 @@ namespace TaskManagement.Application.Interfaces
         DbSet<DynamicFieldDefinition> DynamicFieldDefinitions { get; }
         DbSet<TaskDynamicFieldValue> TaskDynamicFieldValues { get; }
 
+        // Product & Inventory Context
+        DbSet<Unit> Units { get; }
+        DbSet<ProductCategory> ProductCategories { get; }
+        DbSet<Origin> Origins { get; }
+        DbSet<Supplier> Suppliers { get; }
+        DbSet<ProductLabel> ProductLabels { get; }
+        DbSet<ProductProductLabel> ProductProductLabels { get; }
+        DbSet<Product> Products { get; }
+        DbSet<ProductImage> ProductImages { get; }
+        DbSet<ProductUnitConversion> ProductUnitConversions { get; }
+        DbSet<ProductSupplier> ProductSuppliers { get; }
+        DbSet<ProductAttributeGroup> ProductAttributeGroups { get; }
+        DbSet<ProductAttributeValue> ProductAttributeValues { get; }
+        DbSet<ProductVariant> ProductVariants { get; }
+        DbSet<ProductVariantAttributeValue> ProductVariantAttributeValues { get; }
+        DbSet<Warehouse> Warehouses { get; }
+        DbSet<StockBalance> StockBalances { get; }
+        DbSet<StockMovement> StockMovements { get; }
+        DbSet<ImportReceipt> ImportReceipts { get; }
+        DbSet<ImportReceiptLine> ImportReceiptLines { get; }
+        DbSet<ExportReceipt> ExportReceipts { get; }
+        DbSet<ExportReceiptLine> ExportReceiptLines { get; }
+        DbSet<TransferReceipt> TransferReceipts { get; }
+        DbSet<TransferReceiptLine> TransferReceiptLines { get; }
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }
