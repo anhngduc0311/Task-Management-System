@@ -48,59 +48,73 @@ export const routes: Routes = [
       },
       {
         path: 'products',
-        loadComponent: () => import('./features/products/products').then(m => m.Products)
+        loadComponent: () => import('./features/products/products').then(m => m.Products),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'products/new',
-        loadComponent: () => import('./features/products/product-form').then(m => m.ProductForm)
+        loadComponent: () => import('./features/products/product-form').then(m => m.ProductForm),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager'])]
       },
       {
         path: 'products/edit/:id',
-        loadComponent: () => import('./features/products/product-form').then(m => m.ProductForm)
+        loadComponent: () => import('./features/products/product-form').then(m => m.ProductForm),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager'])]
       },
       {
         path: 'product-categories',
-        loadComponent: () => import('./features/products/categories').then(m => m.Categories)
+        loadComponent: () => import('./features/products/categories').then(m => m.Categories),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'product-suppliers',
-        loadComponent: () => import('./features/products/suppliers').then(m => m.Suppliers)
+        loadComponent: () => import('./features/products/suppliers').then(m => m.Suppliers),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'product-units',
-        loadComponent: () => import('./features/products/units').then(m => m.Units)
+        loadComponent: () => import('./features/products/units').then(m => m.Units),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'product-origins',
-        loadComponent: () => import('./features/products/origins').then(m => m.Origins)
+        loadComponent: () => import('./features/products/origins').then(m => m.Origins),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'product-labels',
-        loadComponent: () => import('./features/products/labels').then(m => m.Labels)
+        loadComponent: () => import('./features/products/labels').then(m => m.Labels),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'warehouses',
-        loadComponent: () => import('./features/inventory/warehouses').then(m => m.Warehouses)
+        loadComponent: () => import('./features/inventory/warehouses').then(m => m.Warehouses),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'inventory-receipts',
-        loadComponent: () => import('./features/inventory/receipts').then(m => m.Receipts)
+        loadComponent: () => import('./features/inventory/receipts').then(m => m.Receipts),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'inventory-receipts/new',
-        loadComponent: () => import('./features/inventory/receipt-form').then(m => m.ReceiptForm)
+        loadComponent: () => import('./features/inventory/receipt-form').then(m => m.ReceiptForm),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff'])]
       },
       {
         path: 'inventory-receipts/edit/:id',
-        loadComponent: () => import('./features/inventory/receipt-form').then(m => m.ReceiptForm)
+        loadComponent: () => import('./features/inventory/receipt-form').then(m => m.ReceiptForm),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff'])]
       },
       {
         path: 'stock-balances',
-        loadComponent: () => import('./features/inventory/stock-balances').then(m => m.StockBalances)
+        loadComponent: () => import('./features/inventory/stock-balances').then(m => m.StockBalances),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       },
       {
         path: 'stock-movements',
-        loadComponent: () => import('./features/inventory/stock-movements').then(m => m.StockMovements)
+        loadComponent: () => import('./features/inventory/stock-movements').then(m => m.StockMovements),
+        canActivate: [roleGuard(['Admin', 'Inventory Manager', 'Warehouse Staff', 'Viewer'])]
       }
     ]
   },
