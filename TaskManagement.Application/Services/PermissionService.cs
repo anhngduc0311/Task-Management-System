@@ -211,5 +211,11 @@ namespace TaskManagement.Application.Services
             return await IsAdminAsync(userId) || 
                    await HasSystemRoleAsync(userId, "Inventory Manager", "Warehouse Staff", "Viewer");
         }
+
+        public async Task<bool> CanManageWarehouseReceiptsAsync(Guid userId)
+        {
+            return await IsAdminAsync(userId) || 
+                   await HasSystemRoleAsync(userId, "Inventory Manager", "Warehouse Staff");
+        }
     }
 }

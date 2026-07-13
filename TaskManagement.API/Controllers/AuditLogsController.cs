@@ -124,5 +124,62 @@ namespace TaskManagement.API.Controllers
 
             return Ok(logs);
         }
+
+        [HttpGet("inventory/audit-logs")]
+        public async Task<IActionResult> GetInventoryAuditLogs([FromQuery] string? entityType = null, [FromQuery] string? entityId = null)
+        {
+            var canView = await _permissionService.CanManageProductsAsync(CurrentUserId);
+            if (!canView)
+            {
+                return Forbid();
+            }
+
+            var inventoryEntityTypes = new[]
+            {
+                "Unit", "ProductCategory", "Origin", "Supplier", "ProductLabel",
+                "Product", "ProductVariant", "Warehouse", "ImportReceipt",
+                "ExportReceipt", "TransferReceipt"
+            };
+
+            var query = _dbContext.AuditLogs.AsQueryable();
+
+            if (!string.IsNullOrEmpty(entityType))
+            {
+                if (!inventoryEntityTypes.Contains(entityType))
+                {
+                    return BadRequest(new { message = "Invalid inventory entity type." });
+                }
+                query = query.Where(al => al.EntityType == entityType);
+            }
+            else
+            {
+                query = query.Where(al => inventoryEntityTypes.Contains(al.EntityType));
+            }
+
+            if (!string.IsNullOrEmpty(entityId))
+            {
+                query = query.Where(al => al.EntityId == entityId);
+            }
+
+            var logs = await query
+                .OrderByDescending(al => al.ChangedAt)
+                .Select(al => new AuditLogDto
+                {
+                    Id = al.Id,
+                    EntityType = al.EntityType,
+                    EntityId = al.EntityId,
+                    Action = al.Action,
+                    ChangedById = al.ChangedById,
+                    ChangedByName = al.ChangedBy.FullName,
+                    ChangedAt = al.ChangedAt,
+                    OldValue = al.OldValue,
+                    NewValue = al.NewValue,
+                    IpAddress = al.IpAddress,
+                    UserAgent = al.UserAgent
+                })
+                .ToListAsync();
+
+            return Ok(logs);
+        }
     }
 }

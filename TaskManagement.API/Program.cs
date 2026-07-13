@@ -55,6 +55,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IUnitConversionService, UnitConversionService>();
+builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IHtmlSanitizer, HtmlSanitizer>();
 
 // Register Health Checks

@@ -26,5 +26,6 @@ namespace TaskManagement.Application.Interfaces
 
         Task<bool> CanManageProductsAsync(Guid userId);
         Task<bool> CanViewProductsAsync(Guid userId);
+        Task<bool> CanManageWarehouseReceiptsAsync(Guid userId);
     }
 }
