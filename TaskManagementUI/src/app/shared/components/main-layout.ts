@@ -46,6 +46,45 @@ import { Avatar } from './avatar';
               <span>Users</span>
             </a>
           }
+
+          <div class="nav-section-title">Product & Inventory</div>
+          
+          <a routerLink="/products" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">shopping_bag</span>
+            <span>Products</span>
+          </a>
+          <a routerLink="/product-categories" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">category</span>
+            <span>Categories</span>
+          </a>
+          <a routerLink="/product-suppliers" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">local_shipping</span>
+            <span>Suppliers</span>
+          </a>
+          <a routerLink="/product-units" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">straighten</span>
+            <span>Units</span>
+          </a>
+          <a routerLink="/product-origins" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">public</span>
+            <span>Origins</span>
+          </a>
+          <a routerLink="/product-labels" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">label</span>
+            <span>Labels</span>
+          </a>
+          <a routerLink="/warehouses" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">store</span>
+            <span>Warehouses</span>
+          </a>
+          <a routerLink="/inventory-receipts" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">receipt_long</span>
+            <span>Inventory</span>
+          </a>
+          <a routerLink="/stock-balances" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
+            <span class="material-symbols-rounded">inventory_2</span>
+            <span>Stock Report</span>
+          </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -148,6 +187,15 @@ import { Avatar } from './avatar';
       flex-direction: column;
       gap: 6px;
       flex-grow: 1;
+      overflow-y: auto;
+    }
+    .nav-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-light);
+      padding: 16px 14px 4px;
+      letter-spacing: 0.05em;
     }
     .nav-item {
       display: flex;
@@ -383,6 +431,20 @@ export class MainLayout {
     if (url.includes('projects')) return 'Projects';
     if (url.includes('reports')) return 'Reports';
     if (url.includes('users')) return 'User Management';
+    if (url.includes('products/new')) return 'New Product';
+    if (url.includes('products/edit')) return 'Edit Product';
+    if (url.includes('products')) return 'Products';
+    if (url.includes('product-categories')) return 'Product Categories';
+    if (url.includes('product-suppliers')) return 'Suppliers';
+    if (url.includes('product-units')) return 'Units of Measurement';
+    if (url.includes('product-origins')) return 'Origins';
+    if (url.includes('product-labels')) return 'Product Labels';
+    if (url.includes('warehouses')) return 'Warehouses';
+    if (url.includes('inventory-receipts/new')) return 'New Inventory Receipt';
+    if (url.includes('inventory-receipts/edit')) return 'Edit Inventory Receipt';
+    if (url.includes('inventory-receipts')) return 'Inventory Receipts';
+    if (url.includes('stock-balances')) return 'Stock Balances';
+    if (url.includes('stock-movements')) return 'Stock Movements';
     return 'Task Management';
   }
 

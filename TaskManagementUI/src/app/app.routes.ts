@@ -45,6 +45,62 @@ export const routes: Routes = [
       {
         path: 'reports',
         loadComponent: () => import('./features/reports/reports').then(m => m.Reports)
+      },
+      {
+        path: 'products',
+        loadComponent: () => import('./features/products/products').then(m => m.Products)
+      },
+      {
+        path: 'products/new',
+        loadComponent: () => import('./features/products/product-form').then(m => m.ProductForm)
+      },
+      {
+        path: 'products/edit/:id',
+        loadComponent: () => import('./features/products/product-form').then(m => m.ProductForm)
+      },
+      {
+        path: 'product-categories',
+        loadComponent: () => import('./features/products/categories').then(m => m.Categories)
+      },
+      {
+        path: 'product-suppliers',
+        loadComponent: () => import('./features/products/suppliers').then(m => m.Suppliers)
+      },
+      {
+        path: 'product-units',
+        loadComponent: () => import('./features/products/units').then(m => m.Units)
+      },
+      {
+        path: 'product-origins',
+        loadComponent: () => import('./features/products/origins').then(m => m.Origins)
+      },
+      {
+        path: 'product-labels',
+        loadComponent: () => import('./features/products/labels').then(m => m.Labels)
+      },
+      {
+        path: 'warehouses',
+        loadComponent: () => import('./features/inventory/warehouses').then(m => m.Warehouses)
+      },
+      {
+        path: 'inventory-receipts',
+        loadComponent: () => import('./features/inventory/receipts').then(m => m.Receipts)
+      },
+      {
+        path: 'inventory-receipts/new',
+        loadComponent: () => import('./features/inventory/receipt-form').then(m => m.ReceiptForm)
+      },
+      {
+        path: 'inventory-receipts/edit/:id',
+        loadComponent: () => import('./features/inventory/receipt-form').then(m => m.ReceiptForm)
+      },
+      {
+        path: 'stock-balances',
+        loadComponent: () => import('./features/inventory/stock-balances').then(m => m.StockBalances)
+      },
+      {
+        path: 'stock-movements',
+        loadComponent: () => import('./features/inventory/stock-movements').then(m => m.StockMovements)
       }
     ]
   },
